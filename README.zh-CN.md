@@ -1,4 +1,7 @@
-<img alt="仅供学习交流，请在下载后 24 小时内自行删除" src="assets/brand/notice-zh.svg" width="100%">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/brand/notice-zh-dark.svg">
+  <img alt="仅供学习交流，请在下载后 24 小时内自行删除" src="assets/brand/notice-zh.svg" width="100%">
+</picture>
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/brand/banner-dark.png">
