@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Disclaimer / 免责声明
+    url: https://github.com/yuanruoyu515/duckease-music/blob/main/DISCLAIMER.md
+    about: Project identity, account risks, rights, and maintenance scope / 项目身份、账号风险、权利与维护范围
+  - name: Privacy / 隐私说明
+    url: https://github.com/yuanruoyu515/duckease-music/blob/main/PRIVACY.md
+    about: Network requests, local data, and redacting reports / 网络请求、本地数据及反馈脱敏

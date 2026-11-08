@@ -1,0 +1,40 @@
+name: Bug report / 问题反馈
+description: A reproducible app problem, with private data removed / 可复现且已脱敏的问题
+title: '[Bug] '
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This is an unofficial, personally maintained client. Read the disclaimer first. Never attach cookies, session files, QR login URLs, private playlists, or unredacted logs.
+        这是非官方个人维护版。请先读免责声明，不要上传 Cookie、session、扫码地址、私人歌单或未脱敏日志。
+  - type: input
+    id: environment
+    attributes:
+      label: OS and architecture / 系统与架构
+      placeholder: macOS, Apple Silicon
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit / 版本或提交
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction / 复现步骤
+      description: Describe the clicks and the result / 说明操作和结果
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior / 预期结果
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Redacted diagnostics / 脱敏诊断
+      description: A -460 response means the platform refused requests. Wait instead of increasing retries. / -460 表示平台拒绝请求，请等待，不要加大重试频率。

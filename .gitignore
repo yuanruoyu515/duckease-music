@@ -1,0 +1,25 @@
+/build/
+/.mygo/
+mygo_windows_*.syso
+/netease-music-mygo
+/node_modules/
+
+# local safety (git-start)
+.DS_Store
+.env
+.env.*
+*.pem
+*.key
+*.p12
+credentials*
+secrets*
+~$*
+.~lock.*
+*.tmp
+__pycache__/
+.venv/
+*.safetensors
+*.ckpt
+*.gguf
+*.onnx
+.claude/scheduled_tasks.lock

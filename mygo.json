@@ -1,0 +1,20 @@
+{
+  "name": "DuckEase Music",
+  "identifier": "dev.egoist.cloudmusic",
+  "slug": "duckease-music",
+  "version": "0.1.25-duckease.1",
+  "out": "build",
+  "macos": {
+    "icon": "icon/DuckEase.icon",
+    "minimumSystemVersion": "13.0"
+  },
+  "linux": {
+    "comment": "第三方网易云音乐桌面客户端",
+    "categories": [
+      "AudioVideo",
+      "Audio",
+      "Player"
+    ],
+    "webview": false
+  }
+}

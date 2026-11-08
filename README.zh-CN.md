@@ -1,0 +1,126 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/brand/banner-dark.png">
+  <img alt="DuckEase Music：MyGo Music 下线后的个人接续维护版，白色小鸭与红色唱片" src="assets/brand/banner-light.png">
+</picture>
+
+<p>
+  <img alt="Go 原生界面" src="https://img.shields.io/badge/native-Go-00ADD8?logo=go&logoColor=white">
+  <img alt="已在 macOS Apple Silicon 验证" src="https://img.shields.io/badge/tested-macOS_Apple_Silicon-18181B?logo=apple&logoColor=white">
+  <img alt="个人维护" src="https://img.shields.io/badge/status-personal_maintenance-D63A32">
+  <a href="LICENSE"><img alt="AGPL-3.0 许可" src="https://img.shields.io/badge/license-AGPL--3.0-18181B"></a>
+  <a href="https://www.threads.com/@realtimyry"><img alt="Threads @realtimyry" src="https://img.shields.io/badge/Threads-@realtimyry-18181B?logo=threads&logoColor=white"></a>
+</p>
+
+[English](README.md) · **简体中文** · [免责声明](DISCLAIMER.md) · [隐私说明](PRIVACY.md)
+
+<img alt="DuckEase 的小鸭子" src="icon/duck/duck-round.svg" width="112" align="right">
+
+[MyGo Music（MyGo 云音乐）](https://github.com/egoist/mygo-cloudmusic)下线了。我还想继续用，就保留了一份源码，接着修自己碰到的问题。这个仓库是它的个人接续维护版，现在叫 **DuckEase Music**。
+
+原应用和大部分代码由 **egoist 及原项目贡献者**完成。我通过 [LeslieYon 保留的镜像](https://github.com/LeslieYon/mygo-cloudmusic)取得源码，在此基础上维护衍生版本。这里的「接续维护」是我自己的行为，不代表原作者正式移交、授权代理或背书。
+
+> [!IMPORTANT]
+> **非官方客户端，业余维护。** 与网易、网易云音乐及原作者没有隶属、合作或代言关系。能否播放仍取决于账号、会员、地区和平台返回结果。登录前请读[免责声明](DISCLAIMER.md)；声明不能授予音乐版权，也不能免除法定义务。
+
+<table>
+  <tr>
+    <td width="33%" valign="top"><img src="assets/icons/music.svg" width="22" height="22"> <b>Go 原生界面</b><br>由 MyGo 直接绘制，桌面应用不用 WebView。</td>
+    <td width="33%" valign="top"><img src="assets/icons/lyrics.svg" width="22" height="22"> <b>留点空间给歌词</b><br>完整播放页、歌词翻译，还有几种律动效果。</td>
+    <td width="33%" valign="top"><img src="assets/icons/duck.svg" width="22" height="22"> <b>自己用，接着修</b><br>换个名字、放只小鸭，维护我在用的这个版本。</td>
+  </tr>
+</table>
+
+## 看看界面
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/home-dark.png">
+  <img alt="DuckEase 浅色首页：每日推荐、四张本地绘制的歌单封面和底部播放栏" src="assets/screenshots/home-light.png">
+</picture>
+
+截图由应用真实的 Go 界面渲染，歌曲、歌词和封面均为本项目准备的演示内容，没有个人账号信息，也不代表在线曲库或实际播放已经通过验证。[截图复现方法](docs/SCREENSHOTS.md)。
+
+<table>
+  <tr>
+    <td width="50%" valign="top"><b>正在播放</b><br>封面、播放控制和滚动歌词放在一页。<br><br><picture><source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/now-playing-dark.png"><img alt="正在播放页，橙色演示封面旁显示本项目原创的中文演示歌词" src="assets/screenshots/now-playing-light.png"></picture></td>
+    <td width="50%" valign="top"><b>歌词律动</b><br>切到单独的舞台，看歌词跟着播放进度变化。<br><br><picture><source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/stage-dark.png"><img alt="歌词律动页，展示本项目原创演示歌词中的一句" src="assets/screenshots/stage-light.png"></picture></td>
+  </tr>
+</table>
+
+## 能做什么
+
+| 听歌 | 找内容 | 桌面体验 |
+|---|---|---|
+| 待播清单、随机、循环、喜欢 | 每日推荐、歌单、排行榜 | 浅色、深色、跟随系统 |
+| 标准到 Hi-Res，取决于实际权限 | 搜索歌曲、歌手、专辑、用户、播客 | 本地歌曲缓存、恢复上次进度 |
+| 同步歌词、翻译 | 私人 FM、心动模式 | 封面手势、键盘操作 |
+| 收听和订阅播客 | 歌手页、专辑页、用户页 | macOS 可选刘海播放器 |
+
+功能可用性由平台决定。选了某种音质，不等于获得了对应播放权限。本项目不增加会员解锁功能，也不承诺绕过访问限制。
+
+## 和原版有什么不同
+
+- 改名为 **DuckEase Music**，换了小鸭图标，保留旧版本地数据目录的迁移。
+- 去掉了依赖原作者 Release 的自动更新。
+- 去掉了因语音库下载失效而无法使用的本地播客字幕；播客仍能收听。
+- 播放失败时有限次数重试并记录诊断日志；收到风控代码 `-460` 时停下冷却，避免连续跳过整张歌单。
+- 公开版移除了继承的旧官网、网站歌曲演示和原作者的签名发布工作流。
+
+具体来源与修改日期见 [NOTICE.md](NOTICE.md)，改动见[更新日志](CHANGELOG.md)，技术细节见[维护说明](MAINTENANCE.md)。公开仓库从清理后的源码快照开始，较早的本地开发历史不随之上传。
+
+## 自己构建
+
+首次公开提供的是**源码**，暂时没有 DuckEase 安装包 Release，也没有自动更新通道。原项目的安装包不属于本分支的发布。
+
+| 需要 | 说明 |
+|---|---|
+| Go **1.27.3 或更新版本** | 以 `go.mod` 为准 |
+| macOS **13+** | 本分支已在 Apple Silicon 上验证本地构建 |
+| Xcode | 打包图标需要其中的 `actool`，只有 Command Line Tools 不够 |
+| 网络 | 用于拉取依赖、访问平台服务 |
+
+```bash
+git clone https://github.com/yuanruoyu515/duckease-music.git
+cd duckease-music
+
+# 开发模式运行原生应用
+go tool mygo dev
+
+# 先测试，再生成 ad hoc 签名的 macOS 应用和磁盘映像
+./scripts/build-local.sh
+```
+
+Apple Silicon 产物在 `build/darwin-arm64/`，包含 `DuckEase Music.app` 和 `.dmg`。要构建通用 Mac 版本，运行 `./scripts/build-local.sh -platform darwin/universal`；本分支尚未验证 Intel 实机运行，继承的 Windows、Linux 构建路径也未验证。
+
+本地构建仅使用 **ad hoc 签名，未经 Apple 公证**，不使用原作者的 Developer ID。下载的构建可能需要在「隐私与安全性」里批准打开；不要关闭系统整体安全保护。
+
+> [!NOTE]
+> **从原版迁移：先退出旧应用。** 为兼容已有登录信息，暂时保留旧 bundle identifier，因此新旧版本不能独立同时运行。首次启动可能把旧版设置和缓存移到 DuckEase 目录，需要保留两份时先备份。签名变化可能触发钥匙串授权，或需要重新扫码登录。
+
+## 登录之前
+
+- 这是第三方客户端，请自行评估账号使用风险。登录、播放和内容可用性都可能随时变化或停止。
+- 打包版通过系统凭据存储保存登录态；开发版把 session 文件保存在本机。两者都不能贴进 issue 或提交到 Git。
+- 应用会请求网易云服务及媒体主机。代码中没有维护者运营的音乐代理或账号服务，维护者也无法控制平台如何处理数据。
+- 缓存、设置、播放状态和诊断日志保存在设备上。日志可能带歌曲 ID 和错误细节，分享前先检查、脱敏。
+
+账号、内容和维护边界的完整说明见[隐私说明](PRIVACY.md)和[免责声明](DISCLAIMER.md)。
+
+## 反馈与贡献
+
+这是业余个人维护，没有固定更新周期或回复时限。欢迎范围清楚、能复现的小修复，提交前请读[贡献说明](CONTRIBUTING.md)和[测试规范](AGENTS.md)。
+
+播放出错时，请附系统、提交版本、操作步骤和脱敏后的错误。遇到 `-460` 先等待，不要加大重试频率。请勿提交会员解锁、绕过地区限制、批量抓取或分享账号凭据的需求。
+
+权利人可提交[权利反馈](https://github.com/yuanruoyu515/duckease-music/issues/new?template=rights.yml)，写明具体内容和希望采取的措施；不要公开上传身份证明或私人函件。也可使用 GitHub 的[版权处理流程](https://docs.github.com/en/site-policy/content-removal-policies/guide-to-submitting-a-dmca-takedown-notice)。
+
+## 致谢与许可
+
+- **[egoist](https://github.com/egoist) 及原项目贡献者**：MyGo Music 的原始开发与本分支的基础。
+- **[LeslieYon/mygo-cloudmusic](https://github.com/LeslieYon/mygo-cloudmusic)**：本项目采用的源码保留镜像，基点 `3c0eb71`。
+- **[MyGo](https://github.com/egoist/mygo)**：原生应用与 UI 框架。
+- **[NeteaseCloudMusicApi](https://github.com/Binaryify/NeteaseCloudMusicApi)**：加密和登录流程参考。
+- **[folia-major](https://github.com/chthollyphile/folia-major)**：歌词动画参考。
+
+源码继续采用 **[AGPL-3.0](LICENSE)**。请保留原作者署名与许可声明，并按许可证履行再分发、修改后网络部署等情形下适用的义务。软件许可不授予音乐、歌词、封面或第三方商标的权利，详见 [NOTICE.md](NOTICE.md)。
+
+个人维护：**Ruoyu / SysNomad** · [GitHub](https://github.com/yuanruoyu515) · [Threads @realtimyry](https://www.threads.com/@realtimyry)

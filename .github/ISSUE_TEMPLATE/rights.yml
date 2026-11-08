@@ -1,0 +1,28 @@
+name: Rights report / 权利反馈
+description: Identify specific material and the requested action / 指明具体内容及希望采取的措施
+title: '[Rights] '
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This report is public. Do not attach identity documents, credentials, or private correspondence. GitHub's formal copyright process is available at https://docs.github.com/en/site-policy/content-removal-policies/guide-to-submitting-a-dmca-takedown-notice .
+        本反馈公开可见，请勿上传身份证明、账号凭据或私人函件；需要正式投诉时可使用 GitHub 的版权处理流程。
+  - type: textarea
+    id: material
+    attributes:
+      label: Material and exact URLs / 涉及内容及准确链接
+    validations:
+      required: true
+  - type: textarea
+    id: basis
+    attributes:
+      label: Basis of the report / 反馈依据
+      description: Identify the work or right involved; omit private documents / 说明涉及的作品或权利，不上传私人证明文件
+    validations:
+      required: true
+  - type: textarea
+    id: action
+    attributes:
+      label: Requested action / 希望采取的措施
+    validations:
+      required: true
