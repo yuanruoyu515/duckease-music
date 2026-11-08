@@ -4,11 +4,11 @@
 </picture>
 
 <p>
-  <img alt="Native Go interface" src="https://img.shields.io/badge/native-Go-00ADD8?logo=go&logoColor=white">
-  <img alt="Verified on macOS Apple Silicon" src="https://img.shields.io/badge/tested-macOS_Apple_Silicon-18181B?logo=apple&logoColor=white">
-  <img alt="Independent personal maintenance" src="https://img.shields.io/badge/status-personal_maintenance-D63A32">
-  <a href="LICENSE"><img alt="AGPL-3.0 license" src="https://img.shields.io/badge/license-AGPL--3.0-18181B"></a>
-  <a href="https://www.threads.com/@realtimyry"><img alt="Threads @realtimyry" src="https://img.shields.io/badge/Threads-@realtimyry-18181B?logo=threads&logoColor=white"></a>
+  <img alt="Native Go interface" src="assets/badges/go.svg">
+  <img alt="Verified on macOS Apple Silicon" src="assets/badges/macos.svg">
+  <img alt="Independent personal maintenance" src="assets/badges/maintenance.svg">
+  <a href="LICENSE"><img alt="AGPL-3.0 license" src="assets/badges/license.svg"></a>
+  <a href="https://www.threads.com/@realtimyry"><img alt="Threads @realtimyry" src="assets/badges/threads.svg"></a>
 </p>
 
 **English** · [简体中文](README.zh-CN.md) · [Disclaimer / 免责声明](DISCLAIMER.md) · [Privacy / 隐私说明](PRIVACY.md)

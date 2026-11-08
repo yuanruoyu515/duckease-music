@@ -4,11 +4,11 @@
 </picture>
 
 <p>
-  <img alt="Go 原生界面" src="https://img.shields.io/badge/native-Go-00ADD8?logo=go&logoColor=white">
-  <img alt="已在 macOS Apple Silicon 验证" src="https://img.shields.io/badge/tested-macOS_Apple_Silicon-18181B?logo=apple&logoColor=white">
-  <img alt="个人维护" src="https://img.shields.io/badge/status-personal_maintenance-D63A32">
-  <a href="LICENSE"><img alt="AGPL-3.0 许可" src="https://img.shields.io/badge/license-AGPL--3.0-18181B"></a>
-  <a href="https://www.threads.com/@realtimyry"><img alt="Threads @realtimyry" src="https://img.shields.io/badge/Threads-@realtimyry-18181B?logo=threads&logoColor=white"></a>
+  <img alt="Go 原生界面" src="assets/badges/go.svg">
+  <img alt="已在 macOS Apple Silicon 验证" src="assets/badges/macos.svg">
+  <img alt="个人维护" src="assets/badges/maintenance.svg">
+  <a href="LICENSE"><img alt="AGPL-3.0 许可" src="assets/badges/license.svg"></a>
+  <a href="https://www.threads.com/@realtimyry"><img alt="Threads @realtimyry" src="assets/badges/threads.svg"></a>
 </p>
 
 [English](README.md) · **简体中文** · [免责声明](DISCLAIMER.md) · [隐私说明](PRIVACY.md)

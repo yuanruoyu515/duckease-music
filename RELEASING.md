@@ -1,51 +1,21 @@
-# Releasing
+# Publishing DuckEase Music / 发布说明
 
-1. Commit pending work, bring main up to date with origin, and run `go test ./internal/...`. Others push to main too, so a release cut from a stale main leaves out their work:
+The initial public version is a source publication, `0.1.25-duckease.1`. The repository has a test workflow, no automatic release uploader, and no automatic update feed. It does not use the original author's signing credentials, releases, or website.
 
-   ```bash
-   git pull --rebase origin main
-   ```
+首次公开只提供源码。`scripts/build-local.sh` 负责测试并生成本地 ad hoc 签名的 macOS 应用和 DMG，不上传产物，也不做 Apple 公证。
 
-2. Bump `version` in `mygo.json`, and add a `## 0.1.8` section at the top of `CHANGELOG.md` saying, in Chinese, what changed for people using the app since the last release (`git log v0.1.7..HEAD`, after the pull). Commit both in a commit titled just the version, e.g. `0.1.8`. MyGo's updater shows that section in the app's update window, and the release page takes it as its notes; `mygo build` fails without one.
-3. Push main first, and tag only once that push has gone through. Pushing both at once still pushes the tag when main is rejected, and the tag starts a release build of a commit that isn't on main:
+## Source updates
 
-   ```bash
-   git push origin main
-   git tag v0.1.8
-   git push origin v0.1.8
-   ```
+1. Work on a branch based on the public repository's `main`. In the original local checkout, use `codex/public-release`; the older local `main` contains removed website media and is retained only as development history. Do not push that older branch or mirror all refs.
+2. Make a focused change, update `CHANGELOG.md` for user-visible behavior, and keep `mygo.json`'s version distinct from the original app.
+3. Follow `AGENTS.md`. Run `CGO_ENABLED=0 go test ./internal/...` and `go tool mygo vet .`; render and inspect UI changes. Reproduce README screenshots with `docs/SCREENSHOTS.md` when necessary.
+4. Commit the checked change. Push only with the repository owner's authorization. In the original checkout, the explicit branch mapping is `git push origin codex/public-release:main`.
+5. Verify the remote commit and the GitHub Actions result. A source push does not publish an installation package.
 
-   If main is rejected, pull again, add what came in to the changelog, amend the version commit, test, and push main again before tagging. If a tag went up on the wrong commit anyway, cancel its run, then delete the tag and the draft it made before tagging again:
+## Before any future binary release
 
-   ```bash
-   git push origin :refs/tags/v0.1.8
-   gh release delete v0.1.8 --yes
-   ```
+Document which platforms were actually tested, the signing and notarization state, changes from the previous version, and how recipients can obtain the corresponding source under AGPL-3.0. Keep `NOTICE.md`, `LICENSE`, `DISCLAIMER.md`, and `PRIVACY.md` available with the release information.
 
-4. `.github/workflows/release.yml` builds macOS, Windows and Linux and uploads them to a draft release. Wait for every job to pass:
+Do not reuse the original author's Developer ID, update feed, download URLs, or website identity. Do not upload account state, caches, logs, private credentials, or third-party music as release assets. A disclaimer does not supply missing content or platform permissions.
 
-   ```bash
-   gh run watch "$(gh run list --workflow release.yml -L1 --json databaseId -q '.[0].databaseId')" --exit-status
-   ```
-
-   If a job fails, don't publish; fix it first.
-
-5. Publish the draft and mark it latest:
-
-   ```bash
-   gh release edit v0.1.8 --draft=false --latest
-   ```
-
-6. Check the update feed shows the new version:
-
-   ```bash
-   curl -sL https://github.com/egoist/mygo-cloudmusic/releases/latest/download/update-darwin-arm64.json
-   ```
-
-7. Deploy the website. It reads the latest release when it's prerendered, so it has to be rebuilt after publishing:
-
-   ```bash
-   cd website && bun run deploy
-   ```
-
-   Then check https://mygo-cloudmusic.egoist.workers.dev/download/ shows the new version.
+No release tag or binary is created by these instructions. A future release requires its own verified artifacts and publication decision.

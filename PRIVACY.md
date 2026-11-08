@@ -8,7 +8,7 @@
 
 应用直接请求网易云音乐接口（包括 `music.163.com`、`interfacepc.music.163.com`）及平台返回的媒体、图片地址。搜索词、播放请求和登录后的账号操作会发送给相关服务。它们会获得连接所需的网络信息，登录请求还可能带客户端与设备标识。维护者不控制这些服务的数据处理、保存期限或地区。
 
-代码中没有维护者运营的登录服务器、音乐代理、遥测或崩溃上传服务。原作者的自动更新功能已移除。下载 Go 依赖、访问 GitHub、点击外部链接也会产生对相应服务的请求。README 的徽章由 Shields.io 提供，浏览仓库时由 GitHub 和相关图片服务处理。
+代码中没有维护者运营的登录服务器、音乐代理、遥测或崩溃上传服务。原作者的自动更新功能已移除。下载 Go 依赖、访问 GitHub、点击外部链接也会产生对相应服务的请求。README 的横幅、徽章和截图随仓库存放，由 GitHub 提供。
 
 ### 设备上保存什么
 
@@ -32,7 +32,7 @@ macOS 的常用目录为 `~/Library/Application Support/DuckEase Music/` 和 `~/
 
 The app contacts NetEase API hosts, including `music.163.com` and `interfacepc.music.163.com`, and media or image locations returned by the platform. Queries, playback requests, authenticated actions, connection metadata, and applicable client/device identifiers reach those services. The maintainer does not control their retention or processing.
 
-This code has no maintainer-operated login server, music proxy, telemetry, or crash-upload service. The original updater has been removed. Dependency downloads, GitHub visits, and external links contact their respective services. README badges are served through Shields.io and GitHub's image handling.
+This code has no maintainer-operated login server, music proxy, telemetry, or crash-upload service. The original updater has been removed. Dependency downloads, GitHub visits, and external links contact their respective services. README graphics, badges, and screenshots are stored in the repository and served by GitHub.
 
 Packaged builds use the system credential store for login data; development builds save a local `session` file, which should not be treated as an encrypted vault. Settings, device state, search history, and playback state remain in the application data directory. `session.json` contains playback state and is distinct from the login session file. Audio and artwork are cached locally. Diagnostic logs may contain track IDs, quality choices, request errors, and other troubleshooting details.
 
