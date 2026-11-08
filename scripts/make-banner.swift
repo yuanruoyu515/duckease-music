@@ -37,8 +37,7 @@ for dark in [false, true] {
     let foreground = rgb(dark ? 0xFAF4ED : 0x272326)
     let muted = rgb(dark ? 0xC5B4AA : 0x70645E)
     let red = rgb(dark ? 0xF37B6F : 0xC63E34)
-    rgb(dark ? 0x211C1B : 0xFAF6F0).setFill()
-    NSRect(x: 0, y: 0, width: 1600, height: 560).fill()
+    // No background fill: the banner sits on the page's own color.
 
     // Record grooves continue beyond the frame, behind the duck.
     for radius in stride(from: CGFloat(220), through: 540, by: 22) {
