@@ -54,7 +54,7 @@ DuckEase Music 是 Ruoyu / SysNomad 在 MyGo Music 下线后，基于公开保�
 
 不想公开具体内容的，可以在表单各必填栏只写「请求私下联系」和你的身份类别（如权利人、代理人），不必写细节，维护者会回复非公开的联系方式。
 
-维护者一般会在收到后 7 天内回复。权利依据看起来成立时，会先下架或替换涉及的内容，再进一步核实。如果你认为某项内容被误下架，可以用同一个表单说明理由，维护者会重新评估。
+权利依据看起来成立时，会先下架或替换涉及的内容，再进一步核实。如果你认为某项内容被误下架，可以用同一个表单说明理由，维护者会重新评估。
 
 **免责声明不是授权书、法律意见或免责护身符。「个人维护」「免费开源」「学习研究」等描述本身不会消除侵权、合同或其他法律责任，也不要求用户放弃法定权利。**
 
@@ -112,7 +112,7 @@ Use the [rights report form](https://github.com/yuanruoyu515/duckease-music/issu
 
 If you prefer not to describe the matter publicly, fill the required fields with only "requesting private contact" and your role (for example, rights holder or agent). The maintainer will reply with a non-public contact method.
 
-The maintainer aims to respond within 7 days. Where a claim appears well founded, the material will be removed or replaced first and reviewed further afterwards. If you believe material was removed by mistake, explain why through the same form and it will be reassessed.
+Where a claim appears well founded, the material will be removed or replaced first and reviewed further afterwards. If you believe material was removed by mistake, explain why through the same form and it will be reassessed.
 
 **This notice is not a license grant, legal advice, or immunity from liability. Personal use, free distribution, open source, and research labels do not by themselves remove copyright, contractual, or other legal obligations. No waiver of statutory rights is requested.**
 

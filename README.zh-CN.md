@@ -1,3 +1,5 @@
+<img alt="仅供学习交流，请在下载后 24 小时内自行删除" src="assets/brand/notice-zh.svg" width="100%">
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/brand/banner-dark.png">
   <img alt="DuckEase Music：MyGo Music 下线后的个人接续维护版，白色小鸭与红色唱片" src="assets/brand/banner-light.png">
