@@ -71,7 +71,7 @@ for dark in [false, true] {
               color: rgb(dark ? 0x392A25 : 0xEEE3D7))
     text("NATIVE GO  /  INDEPENDENT FORK", x: 1121, y: 57, size: 10, color: muted, bold: true, tracking: 0.6)
     NSGraphicsContext.restoreGraphicsState()
-    let output = root.appendingPathComponent("assets/brand/banner-\(dark ? "dark" : "light").png")
+    let output = root.appendingPathComponent("assets/brand/hero-\(dark ? "dark" : "light").png")
     try FileManager.default.createDirectory(at: output.deletingLastPathComponent(), withIntermediateDirectories: true)
     try bitmap.representation(using: .png, properties: [:])!.write(to: output)
     print(output.lastPathComponent)

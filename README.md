@@ -1,8 +1,8 @@
 <img alt="For study and discussion only. Delete within 24 hours of downloading." src="assets/brand/notice-en.svg" width="100%">
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/brand/banner-dark.png">
-  <img alt="DuckEase Music — a personal continuation of MyGo Music, with a white duck and a red record" src="assets/brand/banner-light.png">
+  <source media="(prefers-color-scheme: dark)" srcset="assets/brand/hero-dark.png">
+  <img alt="DuckEase Music — a personal continuation of MyGo Music, with a white duck and a red record" src="assets/brand/hero-light.png">
 </picture>
 
 <p>
