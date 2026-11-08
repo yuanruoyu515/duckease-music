@@ -46,6 +46,14 @@
   </tr>
 </table>
 
+## 本机内存截图：191 MB
+
+Go 原生界面，不套 WebView。下面是我自己 Mac 上的占用截图，**DuckEase Music：191 MB**。
+
+<img alt="维护者的 Mac 进程截图，显示 DuckEase Music 内存占用为 191 MB" src="assets/screenshots/memory-macos.png" width="632">
+
+这是一次本机快照，不是固定内存上限或受控基准测试；实际占用会随播放、封面、缓存和打开的视图变化。
+
 ## 能做什么
 
 | 听歌 | 找内容 | 桌面体验 |
@@ -67,9 +75,19 @@
 
 具体来源与修改日期见 [NOTICE.md](NOTICE.md)，改动见[更新日志](CHANGELOG.md)，技术细节见[维护说明](MAINTENANCE.md)。公开仓库从清理后的源码快照开始，较早的本地开发历史不随之上传。
 
-## 自己构建
+## macOS 安装
 
-首次公开提供的是**源码**，暂时没有 DuckEase 安装包 Release，也没有自动更新通道。原项目的安装包不属于本分支的发布。
+[**下载 macOS DMG 安装包**](https://github.com/yuanruoyu515/duckease-music/releases/download/v0.1.25-duckease.1/duckease-music-0.1.25-duckease.1.dmg) · [发布说明与校验值](https://github.com/yuanruoyu515/duckease-music/releases/tag/v0.1.25-duckease.1)
+
+1. 下载并打开 DMG。
+2. 把 **DuckEase Music** 拖进旁边的 **Applications（应用程序）**。
+3. 推出磁盘映像，再从「应用程序」打开 DuckEase Music。
+
+需要 macOS **13+**。通用版包含 Apple Silicon 和 Intel 两种架构；本地构建与打包检查在 Apple Silicon 上完成，未验证 Intel 实机运行。本版本为 **ad hoc 签名，未经 Apple 公证**。如果被系统拦截，先核对下载来源和校验值，再按 [Apple 的说明](https://support.apple.com/zh-cn/guide/mac-help/mh40616/mac)批准打开，不要关闭系统整体安全保护。
+
+没有自动更新功能，后续版本需从本仓库 Releases 下载。每个版本的源码随 Release 标签提供，应用包内也附有许可证和源码获取说明。
+
+## 自己构建
 
 | 需要 | 说明 |
 |---|---|

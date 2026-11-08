@@ -16,5 +16,12 @@
       "Player"
     ],
     "webview": false
-  }
+  },
+  "resources": [
+    "LICENSE",
+    "NOTICE.md",
+    "DISCLAIMER.md",
+    "PRIVACY.md",
+    "SOURCE.md"
+  ]
 }

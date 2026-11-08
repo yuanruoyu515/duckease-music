@@ -22,7 +22,7 @@ The application source continues under **GNU Affero General Public License, vers
 
 The AGPL covers the licensed software; it does not license music, lyrics, album art, platform data, service access, or third-party marks. NetEase and NetEase Cloud Music names identify the interoperated service. MyGo identifies the original app or framework as the context requires. No endorsement is implied.
 
-The README screenshots use invented track metadata, lyrics written for this project, and abstract covers generated locally. Banner graphics and section icons were drawn for this fork; the duck mark follows this fork's existing app icon. These project-created documentation assets are offered under the same AGPL-3.0 license. This statement does not relicense any third-party content.
+The README interface renders use invented track metadata, lyrics written for this project, and abstract covers generated locally. The separate 191 MB memory screenshot was supplied by the maintainer from their own Mac; it is a single local observation. Banner graphics and section icons were drawn for this fork; the duck mark follows this fork's existing app icon. These project-created documentation assets are offered under the same AGPL-3.0 license. This statement does not relicense any third-party content.
 
 ## 中文说明
 

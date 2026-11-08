@@ -46,6 +46,14 @@ These are renders of the app's actual Go views, using invented songs, original d
   </tr>
 </table>
 
+## 191 MB on my Mac
+
+A native Go app with no WebView. This is my own local memory snapshot: **191 MB** for DuckEase Music.
+
+<img alt="The maintainer's Mac process screenshot showing DuckEase Music using 191 MB of memory" src="assets/screenshots/memory-macos.png" width="632">
+
+One snapshot, not a fixed memory budget or a controlled benchmark. Usage changes with playback, artwork, cache, and open views.
+
 ## What it does
 
 | Listening | Browsing | On your desktop |
@@ -67,14 +75,24 @@ Availability comes from the platform. Selecting a quality does not create an ent
 
 See [provenance and modification dates](NOTICE.md), [changes](CHANGELOG.md), and [maintenance notes](MAINTENANCE.md). This repository starts from a clean publication snapshot; older local development history is not uploaded with it.
 
-## Build it
+## Install on macOS
 
-The initial publication provides **source code**. There is no DuckEase binary release or automatic update channel yet. Binaries from the original project are not releases of this fork.
+[**Download the macOS DMG**](https://github.com/yuanruoyu515/duckease-music/releases/download/v0.1.25-duckease.1/duckease-music-0.1.25-duckease.1.dmg) · [Release notes and checksums](https://github.com/yuanruoyu515/duckease-music/releases/tag/v0.1.25-duckease.1)
+
+1. Download and open the DMG.
+2. Drag **DuckEase Music** onto **Applications** beside it.
+3. Eject the disk image, then open DuckEase Music from Applications.
+
+Requires macOS **13+**. The universal app contains Apple Silicon and Intel code; local build and packaging checks ran on Apple Silicon, with no Intel runtime verification. This release is **ad hoc signed and not Apple notarized**. If macOS blocks it, follow [Apple's instructions for an unidentified developer](https://support.apple.com/guide/mac-help/open-a-mac-app-from-an-unknown-developer-mh40616/mac), after verifying the download and its checksum. Keep system-wide security protections enabled.
+
+There is no automatic updater. Download future versions from this repository's Releases. The matching source is available under the release tag; license and source information are also bundled in the app.
+
+## Build it
 
 | Requirement | Notes |
 |---|---|
 | Go **1.27.3 or newer** | The version required by `go.mod` |
-| macOS **13+**, for the Mac app | This fork's local build has been checked on Apple Silicon |
+| macOS **13+**, for the Mac app | This fork's local build and packaging have been checked on Apple Silicon |
 | Xcode, for macOS packaging | Includes `actool`, needed for the app icon; Command Line Tools alone are insufficient |
 | Network access | Required to fetch dependencies and use the platform's services |
 

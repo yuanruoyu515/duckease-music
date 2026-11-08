@@ -21,3 +21,7 @@ swift scripts/make-banner.swift
 The banner generator uses native AppKit drawing and the fork's existing duck artwork. It registers Century Gothic from the local Microsoft Excel font folder when available; otherwise it falls back to the system font. Chinese text uses PingFang SC. Fonts are used for rasterization and are not bundled in this repository.
 
 The section icons are small SVGs drawn for this fork. Documentation graphics follow the app's existing red and duck identity. The light and dark banners share geometry and use separate background and text colors.
+
+## Local memory snapshot
+
+`assets/screenshots/memory-macos.png` is the maintainer's original Mac screenshot, supplied on 2026-11-08. It shows DuckEase Music at 191 MB. It is separate from the generated UI renders and is not a controlled benchmark or a fixed memory guarantee. No CPU measurement, workload, or comparison baseline is inferred from it.

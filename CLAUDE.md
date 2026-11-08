@@ -10,7 +10,7 @@ Ruoyu 的个人维护分支（fork 自 LeslieYon/mygo-cloudmusic，它是 egoist
 - Do not push, force-push, rewrite history, or move tags unless I ask.
 - Use a new branch for large or experimental changes.
 - Never commit secrets or files ignored by .gitignore.
-- Remote `upstream` is LeslieYon/mygo-cloudmusic (read-only reference). Remote `origin` is yuanruoyu515/duckease-music. Publish the cleaned `codex/public-release` branch to `origin/main`; do not push the older local `main` history, which contains removed website media.
+- Remote `upstream` is LeslieYon/mygo-cloudmusic (read-only reference). Remote `origin` is yuanruoyu515/duckease-music. Local `main` tracks `origin/main`; ordinary pull/push targets this public repository. The local-only `codex/pre-publication-history` branch preserves earlier development and removed website media; never push that backup or mirror all refs.
 
 ## Build and test (verified 2026-11-08, Go 1.27.3 from Homebrew)
 - `CGO_ENABLED=0 go test ./internal/...`

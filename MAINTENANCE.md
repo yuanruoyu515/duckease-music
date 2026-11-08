@@ -35,7 +35,7 @@ brew install go                # 需要 go.mod 里写的 Go 1.27.3
 - 原作者的签名、Apple 公证配置与自动 Release 工作流已移除，`mygo.json` 默认采用 ad hoc 签名。
 - 旧官网、网站歌曲演示和对应的 Bun 配置已移除；不沿用原作者的官网或下载域名。
 - `.github/workflows/test.yml` 只跑源码测试，不生成或上传安装包。
-- 公开仓库从一次清理后的源码快照开始，本机 `main` 保留之前的开发历史。首次公开分支为 `codex/public-release`，推送到 `origin/main`；今后不要把本机旧 `main` 或所有本地引用镜像推到公开库，以免重新带入已移除的历史媒体。
+- 公开仓库从一次清理后的源码快照开始，本机 `codex/pre-publication-history` 保留之前的开发历史，不设远端跟踪。本机 `main` 跟踪 `origin/main`；普通 `git pull` / `git push` 对应自己的公开仓库。不要推送历史备份分支或镜像所有本地引用，以免重新带入已移除的历史媒体。
 - 分发二进制前，重新核对许可证与对应源码交付方式，并明确签名、公证及平台验证状态。`scripts/build-local.sh` 仅构建，不上传。
 
 ## 日常维护
