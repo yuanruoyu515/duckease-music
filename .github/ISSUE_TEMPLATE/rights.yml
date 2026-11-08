@@ -7,6 +7,9 @@ body:
       value: |
         This report is public. Do not attach identity documents, credentials, or private correspondence. GitHub's formal copyright process is available at https://docs.github.com/en/site-policy/content-removal-policies/guide-to-submitting-a-dmca-takedown-notice .
         本反馈公开可见，请勿上传身份证明、账号凭据或私人函件；需要正式投诉时可使用 GitHub 的版权处理流程。
+
+        Prefer not to describe the matter publicly? Fill the required fields with only "requesting private contact" and your role (rights holder, agent, etc.); the maintainer will reply with a non-public contact method. The maintainer aims to respond within 7 days. To dispute a removal, use this form and explain why.
+        不想公开细节的，各必填栏只写「请求私下联系」和你的身份类别（权利人、代理人等），维护者会回复非公开联系方式。一般 7 天内回复。认为内容被误下架的，也可以用本表单说明理由。
   - type: textarea
     id: material
     attributes:

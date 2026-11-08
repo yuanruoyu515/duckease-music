@@ -12,7 +12,7 @@ DuckEase Music is a modified continuation of **MyGo Music / MyGo 云音乐**, or
 
 ## Modifications
 
-**Ruoyu / SysNomad**, **2026-11-08**: renamed the app to DuckEase Music and replaced its icon; retained migration of old local data; removed the original updater and podcast speech transcription; added bounded stream retries, risk-control cooldown handling, and request-header adjustments; prepared bilingual documentation and demo screenshots; removed the old website and inherited signing/release automation; changed the build configuration to ad hoc signing without notarization.
+**Ruoyu / SysNomad**, **2026-11-08**: renamed the app to DuckEase Music and replaced its icon; retained migration of old local data; removed the original updater and podcast speech transcription; added bounded stream retries, a pause when the platform reports risk control, and compatibility changes to client identification; prepared bilingual documentation and demo screenshots; removed the old website and inherited signing/release automation; changed the build configuration to ad hoc signing without notarization.
 
 The published repository begins with a new source snapshot so that the inherited website's audio and obsolete distribution material are not uploaded through earlier Git history. The original development history is preserved locally. This snapshot does not claim the upstream code as new work by the maintainer.
 
