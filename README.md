@@ -83,7 +83,7 @@ See [provenance and modification dates](NOTICE.md), [changes](CHANGELOG.md), and
 2. Drag **DuckEase Music** onto **Applications** beside it.
 3. Eject the disk image, then open DuckEase Music from Applications.
 
-Requires macOS **13+**. The universal app contains Apple Silicon and Intel code; local build and packaging checks ran on Apple Silicon, with no Intel runtime verification. This release is **ad hoc signed and not Apple notarized**. If macOS blocks it, follow [Apple's instructions for an unidentified developer](https://support.apple.com/guide/mac-help/open-a-mac-app-from-an-unknown-developer-mh40616/mac), after verifying the download and its checksum. Keep system-wide security protections enabled.
+Requires macOS **13+**. The universal app contains Apple Silicon and Intel code; local build and packaging checks ran on Apple Silicon, with no Intel runtime verification. This release is **ad hoc signed and not Apple notarized**. If macOS blocks it, follow [Apple's instructions for an unidentified developer](https://support.apple.com/en-us/102445), after verifying the download and its checksum. Keep system-wide security protections enabled.
 
 There is no automatic updater. Download future versions from this repository's Releases. The matching source is available under the release tag; license and source information are also bundled in the app.
 
