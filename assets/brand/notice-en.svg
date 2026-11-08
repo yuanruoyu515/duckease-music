@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 112" width="1600" height="112" role="img" aria-label="For study and discussion only. Delete within 24 hours of downloading.">
-<rect x="1" y="1" width="1598" height="110" rx="18" fill="#FFF6D6" stroke="#EBCF7E" stroke-width="2"/>
+<rect x="1" y="1" width="1598" height="110" rx="18" fill="none" stroke="#EBCF7E" stroke-width="2"/>
 <rect x="1" y="1" width="12" height="110" rx="6" fill="#E0A82E"/>
-<g transform="translate(64 56)"><circle r="22" fill="#E0A82E"/><rect x="-2.6" y="-13" width="5.2" height="16" rx="2.6" fill="#FFF6D6"/><circle cy="9.5" r="3.2" fill="#FFF6D6"/></g>
+<g transform="translate(64 56)"><circle r="22" fill="#E0A82E"/><rect x="-2.6" y="-13" width="5.2" height="16" rx="2.6" fill="#FFFFFF"/><circle cy="9.5" r="3.2" fill="#FFFFFF"/></g>
 <text x="110" y="68" font-family="Century Gothic,CenturyGothic,PingFang SC,Hiragino Sans GB,Microsoft YaHei,Arial,sans-serif" font-size="32" fill="#5A4410">For study and discussion only<tspan fill="#B07A12" dx="18">·</tspan><tspan dx="18" font-weight="bold">Delete within 24 hours of downloading</tspan></text>
 </svg>
