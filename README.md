@@ -1,7 +1,4 @@
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/brand/notice-en-dark.svg">
-  <img alt="For study and discussion only. Delete within 24 hours of downloading." src="assets/brand/notice-en.svg" width="100%">
-</picture>
+<img alt="For study and discussion only. Delete within 24 hours of downloading." src="assets/brand/notice-en.svg" width="100%">
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/brand/banner-dark.png">
