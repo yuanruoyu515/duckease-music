@@ -1,21 +1,22 @@
 <img alt="仅供学习交流，请在下载后 24 小时内自行删除" src="assets/brand/notice-zh.svg" width="100%">
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/brand/hero-dark.png">
-  <img alt="DuckEase Music：MyGo Music 下线后的个人接续维护版，白色小鸭与红色唱片" src="assets/brand/hero-light.png">
+  <source media="(prefers-color-scheme: dark)" srcset="assets/brand/banner-zh-Hans-dark.png">
+  <img alt="DuckEase Music：Go 原生绘制的非官方桌面音乐客户端，配方形小鸭图标和正在播放卡片" src="assets/brand/banner-zh-Hans-light.png">
 </picture>
 
 <p>
-  <img alt="Go 原生界面" src="assets/badges/go.svg">
-  <img alt="已在 macOS Apple Silicon 验证" src="assets/badges/macos.svg">
-  <img alt="个人维护" src="assets/badges/maintenance.svg">
-  <a href="LICENSE"><img alt="AGPL-3.0 许可" src="assets/badges/license.svg"></a>
-  <a href="https://www.threads.com/@realtimyry"><img alt="Threads @realtimyry" src="assets/badges/threads.svg"></a>
+  <a href="https://github.com/yuanruoyu515/duckease-music/releases/latest"><img alt="最新版本" src="https://img.shields.io/github/v/release/yuanruoyu515/duckease-music?label=release&color=D63A32"></a>
+  <img alt="macOS 13 及以上" src="https://img.shields.io/badge/macOS-13%2B-18181B?logo=apple&logoColor=white">
+  <img alt="已在 Apple Silicon 验证" src="https://img.shields.io/badge/Apple_Silicon-verified-18181B">
+  <img alt="Go 原生界面，不用 WebView" src="https://img.shields.io/badge/Go-native_UI-D63A32?logo=go&logoColor=white">
+  <a href="LICENSE"><img alt="AGPL-3.0 许可" src="https://img.shields.io/badge/license-AGPL--3.0-18181B"></a>
+  <a href="https://www.threads.com/@realtimyry"><img alt="Threads @realtimyry" src="https://img.shields.io/badge/Threads-@realtimyry-18181B?logo=threads&logoColor=white"></a>
 </p>
 
 [English](README.md) · **简体中文** · [免责声明](DISCLAIMER.md) · [隐私说明](PRIVACY.md)
 
-<img alt="DuckEase 的小鸭子" src="icon/duck/duck-round.svg" width="112" align="right">
+<img alt="DuckEase 的应用图标" src="assets/brand/app-icon.png" width="112" align="right">
 
 [MyGo Music（MyGo 云音乐）](https://github.com/egoist/mygo-cloudmusic)下线了。我还想继续用，就保留了一份源码，接着修自己碰到的问题。这个仓库是它的个人接续维护版，现在叫 **DuckEase Music**。
 

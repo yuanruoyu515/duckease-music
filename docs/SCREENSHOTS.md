@@ -18,9 +18,15 @@ The original demo lyrics are written for this repository and are not transcribed
 swift scripts/make-banner.swift
 ```
 
-The banner generator uses native AppKit drawing and the fork's existing duck artwork. It registers Century Gothic from the local Microsoft Excel font folder when available; otherwise it falls back to the system font. Chinese text uses PingFang SC. Fonts are used for rasterization and are not bundled in this repository.
+The generator writes English and Simplified Chinese banners, each in light and dark, on a transparent canvas. It draws with native AppKit and uses Century Gothic for Latin text, registered from the local Microsoft Excel font folder when available, and PingFang SC for Chinese. Fonts are used for rasterization and are not bundled. The now-playing card shows the same invented track and original demo lyric as the screenshots.
 
-The section icons are small SVGs drawn for this fork. Documentation graphics follow the app's existing red and duck identity. The light and dark banners share geometry and use separate background and text colors.
+`assets/brand/app-icon.png` is the square app icon exported at 1024 px from a local build, which renders `icon/DuckEase.icon`. The banner and the README logo both use it. Re-export it after the icon changes:
+
+```bash
+swift scripts/export-app-icon.swift "$PWD/build/darwin-universal/DuckEase Music.app" assets/brand/app-icon.png
+```
+
+Badges come from shields.io in the same colors as the banner. The section icons are small SVGs drawn for this fork.
 
 ## Local memory snapshot
 

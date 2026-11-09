@@ -1,21 +1,22 @@
 <img alt="For study and discussion only. Delete within 24 hours of downloading." src="assets/brand/notice-en.svg" width="100%">
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/brand/hero-dark.png">
-  <img alt="DuckEase Music — a personal continuation of MyGo Music, with a white duck and a red record" src="assets/brand/hero-light.png">
+  <source media="(prefers-color-scheme: dark)" srcset="assets/brand/banner-en-dark.png">
+  <img alt="DuckEase Music: an unofficial desktop music client in native Go, shown with its square duck app icon and a now-playing card" src="assets/brand/banner-en-light.png">
 </picture>
 
 <p>
-  <img alt="Native Go interface" src="assets/badges/go.svg">
-  <img alt="Verified on macOS Apple Silicon" src="assets/badges/macos.svg">
-  <img alt="Independent personal maintenance" src="assets/badges/maintenance.svg">
-  <a href="LICENSE"><img alt="AGPL-3.0 license" src="assets/badges/license.svg"></a>
-  <a href="https://www.threads.com/@realtimyry"><img alt="Threads @realtimyry" src="assets/badges/threads.svg"></a>
+  <a href="https://github.com/yuanruoyu515/duckease-music/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/yuanruoyu515/duckease-music?label=release&color=D63A32"></a>
+  <img alt="macOS 13 or later" src="https://img.shields.io/badge/macOS-13%2B-18181B?logo=apple&logoColor=white">
+  <img alt="Verified on Apple Silicon" src="https://img.shields.io/badge/Apple_Silicon-verified-18181B">
+  <img alt="Native Go interface, no WebView" src="https://img.shields.io/badge/Go-native_UI-D63A32?logo=go&logoColor=white">
+  <a href="LICENSE"><img alt="AGPL-3.0 license" src="https://img.shields.io/badge/license-AGPL--3.0-18181B"></a>
+  <a href="https://www.threads.com/@realtimyry"><img alt="Threads @realtimyry" src="https://img.shields.io/badge/Threads-@realtimyry-18181B?logo=threads&logoColor=white"></a>
 </p>
 
 **English** · [简体中文](README.zh-CN.md) · [Disclaimer / 免责声明](DISCLAIMER.md) · [Privacy / 隐私说明](PRIVACY.md)
 
-<img alt="The DuckEase duck" src="icon/duck/duck-round.svg" width="112" align="right">
+<img alt="The DuckEase app icon" src="assets/brand/app-icon.png" width="112" align="right">
 
 [MyGo Music](https://github.com/egoist/mygo-cloudmusic) went offline. I wanted to keep using it, so I kept a copy of the source and started maintaining it for myself. This is that continuation, under the name **DuckEase Music**.
 
