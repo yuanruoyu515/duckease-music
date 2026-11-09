@@ -54,6 +54,16 @@ UI 框架的规则（Context、Element 生命周期、线程）见 `.agents/skil
 - 升级：`go get github.com/egoist/mygo@latest`，`go tool mygo migrate-ui .` 预览，`-write` 应用，再跑全部测试。0.x 阶段每次小版本号变化都可能有破坏性改动。
 - 防止依赖消失：Go 模块代理会缓存已发布的版本，一般拉得到。想更保险，在单独分支执行 `go mod vendor` 并提交。
 
+## 姊妹项目 MyGo Music
+
+[egoist/mygo-music](https://github.com/egoist/mygo-music)（AGPL-3.0）是原作者 2026-11-04 下线云音乐的同一天开的新项目：把云音乐的代码拿掉网易云部分，改成靠插件接音源的通用播放器。它不是云音乐的前身，是同一套代码的后续。播放器（`internal/player`）、歌词（`internal/lyrics`）、界面和刘海播放器都是同源的，它每修一个 bug，我们这边多半也有。
+
+- 两边没有共同的 git 历史（它的第一个提交是一次性导入），不能直接 merge 或 cherry-pick，只能对照着手工移植。
+- 已加成远端 `mygo-music`，只拉不推：`git fetch mygo-music`，然后 `git log mygo-music/main -- internal/player internal/lyrics` 看它最近改了什么，`git diff HEAD mygo-music/main -- internal/player/<文件>` 对照具体差异。
+- 值得移植的：播放、解码、拖动进度、歌词、刘海和界面上的 bug 修复，以及 MyGo 框架的升级（它升级时改了哪些地方，正好是我们升级的参照）。
+- 不要搬的：插件系统、多音源、本地音乐文件夹、播客字幕（我们已删）、自动更新（我们已删）、它的图标和名字。
+- 它更新很快（头 4 天 115 个提交）。建议每次准备发版前看一眼，或者遇到播放类 bug 时先去它那边找找有没有修过。
+
 ## 网易云换接口时怎么修
 
 所有网络请求都在 `internal/netease/`，界面代码不直接碰网易云。走两条通道：
