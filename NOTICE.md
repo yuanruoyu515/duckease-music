@@ -2,7 +2,7 @@
 
 ## Original work
 
-DuckEase Music is a modified continuation of **MyGo Music / MyGo 云音乐**, originally developed by **egoist and the upstream contributors**. Their authorship and applicable copyright notices remain with them. Renaming this fork does not transfer ownership of their work.
+DuckEase Music is a modified continuation of **MyGo 云音乐** (MyGo Cloud Music), originally developed by **egoist and the upstream contributors**. Their authorship and applicable copyright notices remain with them. Renaming this fork does not transfer ownership of their work.
 
 - Original repository: https://github.com/egoist/mygo-cloudmusic
 - Source mirror used: https://github.com/LeslieYon/mygo-cloudmusic

@@ -18,7 +18,7 @@
 
 <img alt="The DuckEase app icon" src="assets/brand/app-icon.png" width="112" align="right">
 
-[MyGo Music](https://github.com/egoist/mygo-cloudmusic) went offline. I wanted to keep using it, so I kept a copy of the source and started maintaining it for myself. This is that continuation, under the name **DuckEase Music**.
+[MyGo 云音乐](https://github.com/egoist/mygo-cloudmusic) (MyGo Cloud Music) went offline. I wanted to keep using it, so I kept a copy of the source and started maintaining it for myself. This is that continuation, under the name **DuckEase Music**.
 
 The original app and most of its code are the work of **egoist and the upstream contributors**. I am maintaining a derivative, with source recovered through [LeslieYon's mirror](https://github.com/LeslieYon/mygo-cloudmusic). This is an independent project; there is no claim of an official handover or endorsement.
 
@@ -68,7 +68,7 @@ One snapshot, not a fixed memory budget or a controlled benchmark. Usage changes
 
 Availability comes from the platform. Selecting a quality does not create an entitlement to it. This project does not add subscription unlocking or a promise to bypass access restrictions.
 
-## What changed from MyGo Music
+## What changed from MyGo 云音乐
 
 - Renamed the app to **DuckEase Music**, with a duck icon and migration of older local data folders.
 - Removed the old automatic updater, which depended on the original author's releases.
@@ -136,7 +136,7 @@ Rights holders can open a [rights report](https://github.com/yuanruoyu515/duckea
 
 ## Credits and license
 
-- **[egoist](https://github.com/egoist) and upstream contributors** — the original MyGo Music app and the foundation of this fork.
+- **[egoist](https://github.com/egoist) and upstream contributors** — the original [MyGo 云音乐](https://github.com/egoist/mygo-cloudmusic) app and the foundation of this fork. Their later [MyGo Music](https://github.com/egoist/mygo-music) is a separate player built from the same code.
 - **[LeslieYon/mygo-cloudmusic](https://github.com/LeslieYon/mygo-cloudmusic)** — the preserved source used here, at `3c0eb71`.
 - **[MyGo](https://github.com/egoist/mygo)** — native application and UI framework.
 - **[NeteaseCloudMusicApi](https://github.com/Binaryify/NeteaseCloudMusicApi)** — a reference for encryption and login flows.
