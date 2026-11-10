@@ -249,7 +249,89 @@ func (a *app) playlistPage(c *ui.Context) {
 		a.trackSkeleton(c, s, true, func(c *ui.Context) { a.playlistHeaderSkeleton(c, s) })
 		return
 	}
-	a.trackRows(c, pl.Tracks, true, func(c *ui.Context) { a.playlistHeader(c, pl) })
+	f := &a.plFilter
+	if f.id != id {
+		*f = plFilter{id: id}
+	}
+	shown := f.match(pl.Tracks)
+	header := func(c *ui.Context) { a.playlistHeader(c, pl) }
+	if shown == nil {
+		a.trackRows(c, pl.Tracks, true, header)
+		return
+	}
+	var footer []func(c *ui.Context)
+	if len(shown) == 0 {
+		footer = append(footer, func(c *ui.Context) { a.playlistNoMatch(c, strings.TrimSpace(f.query)) })
+	}
+	a.trackRowsOf(c, pl.Tracks, shown, true, header, footer...)
+}
+
+// plFilter is what the songs of the playlist id are searched for.
+type plFilter struct {
+	id    int64
+	query string
+	box   ui.Handle
+}
+
+// match returns the indices of the tracks the query finds, in order, or
+// nil with nothing searched for: by name, alias, artist or album, any
+// case.
+func (f *plFilter) match(tracks []netease.Track) []int {
+	q := strings.ToLower(strings.TrimSpace(f.query))
+	if q == "" {
+		return nil
+	}
+	shown := []int{}
+	for i := range tracks {
+		tr := &tracks[i]
+		hay := []string{tr.Name, tr.Album.Name}
+		hay = append(hay, tr.Alias...)
+		for _, ar := range tr.Artists {
+			hay = append(hay, ar.Name)
+		}
+		for _, h := range hay {
+			if strings.Contains(strings.ToLower(h), q) {
+				shown = append(shown, i)
+				break
+			}
+		}
+	}
+	return shown
+}
+
+// playlistSearch is the field that searches the playlist's songs, as the
+// sidebar's searches everything.
+func (a *app) playlistSearch(c *ui.Context) {
+	p := a.pal
+	f := &a.plFilter
+	field := ui.Row(c).Height(36).Width(220).Shrink(1).MinWidth(140).PaddingX(12).Gap(7).Radius(999).AlignItems(ui.Center)
+	if f.box.Focused(c) {
+		field.Background(p.bg).Shadow(0, 0, 0, 3, p.accent.Alpha(0.25)).Border(1, p.accent.Alpha(0.6))
+	} else {
+		field.Background(p.hover).Border(1, p.hairline)
+	}
+	field.Children(func() {
+		ui.Icon(c, iconSearch).Size(14, 14).TextColor(p.muted)
+		ui.TextInputBase(c.Key("pl-search"), &f.query).Bind(&f.box).Grow(1).MinWidth(0).
+			Placeholder("搜索歌单内歌曲").FontSize(13).Label("搜索歌单内歌曲")
+		if f.query != "" {
+			iconButton(c.Key("pl-search-clear"), iconX, 12, p.muted, "清除").KeepFocus().OnClick(func() { f.query = "" })
+		}
+	})
+	f.box.OnShortcut(c, 0, ui.KeyEscape, func() { f.query = "" })
+}
+
+// playlistNoMatch says the playlist has no song of q, and offers to
+// search all songs for it.
+func (a *app) playlistNoMatch(c *ui.Context, q string) {
+	p := a.pal
+	ui.Column(c).Padding(40, 0).Gap(14).AlignItems(ui.Center).Children(func() {
+		ui.Text(c, "歌单里没有找到“"+q+"”").FontSize(13).TextColor(p.muted)
+		if pillButton(c.Key("search-all"), iconSearch, "在全部歌曲中搜索", p.hover.Over(p.bg), p.text).Clicked() {
+			a.query = q
+			a.searchFor(route{page: pageSearch, query: q, kind: netease.SearchSongs})
+		}
+	})
 }
 
 func (a *app) playlistHeader(c *ui.Context, pl *netease.Playlist) {
@@ -326,6 +408,8 @@ func (a *app) playlistHeader(c *ui.Context, pl *netease.Playlist) {
 						a.startHeartMode()
 					}
 				}
+				ui.Box(c).Grow(1)
+				a.playlistSearch(c)
 			})
 		})
 	})
@@ -334,7 +418,18 @@ func (a *app) playlistHeader(c *ui.Context, pl *netease.Playlist) {
 // trackRows lists tracks under a header, which scrolls with them; a click
 // plays the list from the track clicked.
 func (a *app) trackRows(c *ui.Context, tracks []netease.Track, covers bool, header func(c *ui.Context), footer ...func(c *ui.Context)) {
+	a.trackRowsOf(c, tracks, nil, covers, header, footer...)
+}
+
+// trackRowsOf lists the tracks at the indices shown, or all with nil, by
+// their numbers in tracks; a click plays all of tracks from the one
+// clicked.
+func (a *app) trackRowsOf(c *ui.Context, all []netease.Track, shown []int, covers bool, header func(c *ui.Context), footer ...func(c *ui.Context)) {
 	p := a.pal
+	n := len(all)
+	if shown != nil {
+		n = len(shown)
+	}
 	cur := a.pl.Current()
 	// A song's menu can take it out of the playlist it is listed in.
 	var pid int64
@@ -348,7 +443,7 @@ func (a *app) trackRows(c *ui.Context, tracks []netease.Track, covers bool, head
 	// Rows out of view are not built, their marks with them: a list
 	// scrolled away from its start or end has content under the bars.
 	a.underTop, a.underBottom = true, true
-	rows := len(tracks) + 1 + len(footer)
+	rows := n + 1 + len(footer)
 	ui.List(c.Key(a.route), &a.trackList, rows, func(i int) {
 		if i == 0 {
 			ui.Column(c).Children(func() {
@@ -360,12 +455,15 @@ func (a *app) trackRows(c *ui.Context, tracks []netease.Track, covers bool, head
 		if i == rows-1 {
 			defer a.endMark(c)
 		}
-		if i > len(tracks) {
-			footer[i-len(tracks)-1](c)
+		if i > n {
+			footer[i-n-1](c)
 			return
 		}
 		i--
-		tr := &tracks[i]
+		if shown != nil {
+			i = shown[i]
+		}
+		tr := &all[i]
 		playing := cur != nil && cur.ID == tr.ID
 		row := ui.ButtonBase(c.Key(tr.ID)).Height(54).PaddingX(12).Gap(14).Radius(10).AlignItems(ui.Center).FocusRing(false).Label(tr.Name).
 			ContextMenu(a.songItems(tr, pid))
@@ -434,7 +532,7 @@ func (a *app) trackRows(c *ui.Context, tracks []netease.Track, covers bool, head
 			ui.Text(c, clock(tr.Length())).FontSize(12.5).FontFeatures("tnum").TextColor(p.faint).Width(44).TextAlign(ui.End)
 		})
 		if row.Clicked() && tr.Playable() {
-			a.pl.PlayQueue(tracks, i)
+			a.pl.PlayQueue(all, i)
 		}
 	}).Grow(1).Padding(top+pageGap, pagePad-12, bottom+32, pagePad-12).ScrollbarInsets(top, 0, bottom, 0)
 }
