@@ -1,6 +1,6 @@
 # Publishing DuckEase Music / 发布说明
 
-Version `0.1.25-duckease.2` provides source and a macOS universal drag-install DMG. The repository has a test workflow, no automatic release uploader, and no signed update feed. The app finds new versions through the GitHub API's latest release, so tag each release `v<version>` and attach the `.dmg`. It does not use the original author's signing credentials, releases, or website.
+Version `0.1.25-duckease.3` provides source and a macOS universal drag-install DMG. The repository has a test workflow, no automatic release uploader, and no signed update feed. The app finds new versions through the GitHub API's latest release, so tag each release `v<version>` and attach the `.dmg`. It does not use the original author's signing credentials, releases, or website.
 
 公开版提供 macOS 通用 DMG 和对应标签源码。`scripts/build-local.sh` 负责测试并生成本地 ad hoc 签名的 macOS 应用和 DMG，不上传产物，也不做 Apple 公证。
 

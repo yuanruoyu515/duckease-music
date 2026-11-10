@@ -49,7 +49,7 @@ These are renders of the app's actual Go views, using invented songs, original d
   </tr>
 </table>
 
-## New in 0.1.25-duckease.2
+## New in 0.1.25-duckease.3
 
 <table>
   <tr>
@@ -57,6 +57,8 @@ These are renders of the app's actual Go views, using invented songs, original d
     <td width="42%" valign="top"><b>Fallback source and a comments switch</b><br>Both are under Settings → Playback. <b>Fallback source</b> is off by default. When it's on, songs that fail to load and greyed-out songs are fetched from <a href="https://music.gdstudio.xyz">GD音乐台(music.gdstudio.xyz)</a>. The app reports a song as unplayable only when both sources fail. <b>Show comments</b> turns the comments tab and the hot comments between verses on or off.<br><br><picture><source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/settings-dark.png"><img alt="The Playback settings group, with the Fallback source and Show comments switches" src="assets/screenshots/settings-light.png"></picture></td>
   </tr>
 </table>
+
+The app also checks this repository's releases for new versions and offers to download them, and its About window links to my GitHub and Threads.
 
 ## 191 MB on my Mac
 
@@ -90,7 +92,7 @@ See [provenance and modification dates](NOTICE.md), [changes](CHANGELOG.md), and
 
 ## Install on macOS
 
-[**Download the macOS DMG**](https://github.com/yuanruoyu515/duckease-music/releases/download/v0.1.25-duckease.2/duckease-music-0.1.25-duckease.2.dmg) · [Release notes and checksums](https://github.com/yuanruoyu515/duckease-music/releases/tag/v0.1.25-duckease.2)
+[**Download the macOS DMG**](https://github.com/yuanruoyu515/duckease-music/releases/download/v0.1.25-duckease.3/duckease-music-0.1.25-duckease.3.dmg) · [Release notes and checksums](https://github.com/yuanruoyu515/duckease-music/releases/tag/v0.1.25-duckease.3)
 
 1. Download and open the DMG.
 2. Drag **DuckEase Music** onto **Applications** beside it.

@@ -49,7 +49,7 @@
   </tr>
 </table>
 
-## 0.1.25-duckease.2 新功能
+## 0.1.25-duckease.3 新功能
 
 <table>
   <tr>
@@ -57,6 +57,8 @@
     <td width="42%" valign="top"><b>备用音源与评论开关</b><br>都在「设置 → 播放」里。<b>备用音源</b>默认关闭，打开后，网易云加载失败的歌和歌单里的灰色歌曲改从 <a href="https://music.gdstudio.xyz">GD音乐台(music.gdstudio.xyz)</a> 取，两边都没有才提示无法播放。<b>显示评论</b>控制播放页的评论和间奏热评。<br><br><picture><source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/settings-dark.png"><img alt="设置的播放分组，含备用音源与显示评论两个开关" src="assets/screenshots/settings-light.png"></picture></td>
   </tr>
 </table>
+
+另外，应用会检查本仓库的新版本并提示下载，「关于」窗口里有我的 GitHub 和 Threads 链接。
 
 ## 本机内存截图：191 MB
 
@@ -90,7 +92,7 @@ Go 原生界面，不套 WebView。下面是我自己 Mac 上的占用截图，*
 
 ## macOS 安装
 
-[**下载 macOS DMG 安装包**](https://github.com/yuanruoyu515/duckease-music/releases/download/v0.1.25-duckease.2/duckease-music-0.1.25-duckease.2.dmg) · [发布说明与校验值](https://github.com/yuanruoyu515/duckease-music/releases/tag/v0.1.25-duckease.2)
+[**下载 macOS DMG 安装包**](https://github.com/yuanruoyu515/duckease-music/releases/download/v0.1.25-duckease.3/duckease-music-0.1.25-duckease.3.dmg) · [发布说明与校验值](https://github.com/yuanruoyu515/duckease-music/releases/tag/v0.1.25-duckease.3)
 
 1. 下载并打开 DMG。
 2. 把 **DuckEase Music** 拖进旁边的 **Applications（应用程序）**。
