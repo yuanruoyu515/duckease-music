@@ -278,3 +278,19 @@ func TestProgramCommentsLive(t *testing.T) {
 		t.Errorf("no answer of %d: %v", ids[1], liked)
 	}
 }
+
+// The fallback source streams a VIP song that NetEase gives only signed
+// in, at the level asked or below it.
+func TestFallbackURLLive(t *testing.T) {
+	if os.Getenv("LIVE") == "" {
+		t.Skip()
+	}
+	s, err := FallbackURL(2652820720, "exhigh")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s.Type != "mp3" || s.Size == 0 || !strings.HasPrefix(s.URL, "https://") {
+		t.Fatalf("got %+v", s)
+	}
+	t.Logf("%s %s %d bytes", s.Type, s.Level, s.Size)
+}

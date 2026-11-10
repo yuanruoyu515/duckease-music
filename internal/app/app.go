@@ -207,6 +207,7 @@ func Run() error {
 	logToFile()
 	mygo.App.WhenReady(func() {
 		a.settings = loadSettings()
+		netease.Fallback.Store(a.settings.Fallback)
 		a.settings.applyAppearance()
 		a.npPane = a.lyricsPaneChosen()
 		// Before the window: on Windows it lays out its content as it is

@@ -79,3 +79,43 @@ func TestLoadingTrackChosenAgain(t *testing.T) {
 		t.Fatalf("gen %d, playing %v: want the same load, playing", p.gen, p.playing)
 	}
 }
+
+// With the fallback source on, a song NetEase fails is asked of it once,
+// a greyed-out one only of it, and with it off, it is never asked.
+func TestOpenAnyFallsBack(t *testing.T) {
+	defer func(f, g func(int64, string) (*netease.Stream, error), d []time.Duration, on bool) {
+		songURL, fallbackURL, retryDelays = f, g, d
+		netease.Fallback.Store(on)
+	}(songURL, fallbackURL, retryDelays, netease.Fallback.Load())
+	retryDelays = []time.Duration{0, 0}
+	refused := &netease.RefusedError{Code: -460}
+	for _, c := range []struct {
+		name     string
+		on       bool
+		track    netease.Track
+		netease  error
+		asked    int // of NetEase
+		fellBack int
+		want     error
+	}{
+		{"off", false, netease.Track{ID: 1}, netease.ErrUnavailable, 2, 0, netease.ErrUnavailable},
+		{"unavailable", true, netease.Track{ID: 1}, netease.ErrUnavailable, 2, 1, netease.ErrFallbackUnavailable},
+		{"blocked", true, netease.Track{ID: 1}, refused, 1, 1, refused},
+		{"greyed", true, netease.Track{ID: 1, Fee: 1}, netease.ErrUnavailable, 0, 1, netease.ErrFallbackUnavailable},
+		{"episode", true, netease.Track{ID: 1, ProgramID: 2}, netease.ErrUnavailable, 2, 0, netease.ErrUnavailable},
+	} {
+		netease.Fallback.Store(c.on)
+		asked, fellBack := 0, 0
+		songURL = func(int64, string) (*netease.Stream, error) { asked++; return nil, c.netease }
+		fallbackURL = func(int64, string) (*netease.Stream, error) {
+			fellBack++
+			return nil, netease.ErrFallbackUnavailable
+		}
+		p := &Player{}
+		p.latest.Store(1)
+		_, _, err := p.openAny(c.track, "exhigh", 1)
+		if err != c.want || asked != c.asked || fellBack != c.fellBack {
+			t.Errorf("%s: got %v, NetEase asked %d, fallback %d; want %v, %d, %d", c.name, err, asked, fellBack, c.want, c.asked, c.fellBack)
+		}
+	}
+}

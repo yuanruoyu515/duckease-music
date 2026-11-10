@@ -66,7 +66,7 @@ One snapshot, not a fixed memory budget or a controlled benchmark. Usage changes
 | Synced lyrics and translations | Personal FM and Heartbeat mode | Cover gestures and keyboard controls |
 | Podcast playback and subscriptions | Artist, album, and user pages | Optional notch player on macOS |
 
-Availability comes from the platform. Selecting a quality does not create an entitlement to it. This project does not add subscription unlocking or a promise to bypass access restrictions.
+Availability comes from the platform. Selecting a quality does not create an entitlement to it. This project does not add subscription unlocking or a promise to bypass access restrictions. The one exception is opt-in and off by default: the **Fallback source** setting asks the third-party [GD音乐台](https://music.gdstudio.xyz) API for songs that fail to load or show greyed out. That service is free, run by someone else, for personal study only, and may stop at any time.
 
 ## What changed from MyGo 云音乐
 
@@ -141,6 +141,7 @@ Rights holders can open a [rights report](https://github.com/yuanruoyu515/duckea
 - **[MyGo](https://github.com/egoist/mygo)** — native application and UI framework.
 - **[NeteaseCloudMusicApi](https://github.com/Binaryify/NeteaseCloudMusicApi)** — a reference for encryption and login flows.
 - **[folia-major](https://github.com/chthollyphile/folia-major)** — a reference for lyric animation.
+- **[GD音乐台(music.gdstudio.xyz)](https://music.gdstudio.xyz)** — the optional fallback source, an API by GD Studio, credited as the site asks.
 
 Source code continues under **[AGPL-3.0](LICENSE)**. Keep upstream attribution and license notices; redistribution and modified network deployments must follow the applicable license requirements. The software license does not grant rights to music, lyrics, artwork, or third-party trademarks. See [NOTICE.md](NOTICE.md).
 

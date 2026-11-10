@@ -8,6 +8,8 @@
 
 应用直接请求网易云音乐接口（包括 `music.163.com`、`interfacepc.music.163.com`）及平台返回的媒体、图片地址。搜索词、播放请求和登录后的账号操作会发送给相关服务。它们会获得连接所需的网络信息，登录请求还可能带客户端与设备标识。维护者不控制这些服务的数据处理、保存期限或地区。
 
+在设置中打开「备用音源」后，网易云加载失败的歌曲和灰色歌曲会把歌曲 ID 与音质发给第三方的 `music-api.gdstudio.xyz`（GD音乐台），它会获得连接所需的网络信息，但不会收到登录态。这个选项默认关闭。
+
 代码中没有维护者运营的登录服务器、音乐代理、遥测或崩溃上传服务。原作者的自动更新功能已移除。下载 Go 依赖、访问 GitHub、点击外部链接也会产生对相应服务的请求。README 的横幅、徽章和截图随仓库存放，由 GitHub 提供。
 
 ### 设备上保存什么
@@ -31,6 +33,8 @@ macOS 的常用目录为 `~/Library/Application Support/DuckEase Music/` 和 `~/
 ## English
 
 The app contacts NetEase API hosts, including `music.163.com` and `interfacepc.music.163.com`, and media or image locations returned by the platform. Queries, playback requests, authenticated actions, connection metadata, and applicable client/device identifiers reach those services. The maintainer does not control their retention or processing.
+
+With the optional **Fallback source** setting on, songs that fail to load or show greyed out send their track ID and quality to the third-party `music-api.gdstudio.xyz` (GD音乐台), which sees connection metadata but not the login session. The setting is off by default.
 
 This code has no maintainer-operated login server, music proxy, telemetry, or crash-upload service. The original updater has been removed. Dependency downloads, GitHub visits, and external links contact their respective services. README graphics, badges, and screenshots are stored in the repository and served by GitHub.
 

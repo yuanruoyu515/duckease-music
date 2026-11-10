@@ -83,10 +83,16 @@ func (t *Track) ArtistNames() string {
 	return strings.Join(names, ", ")
 }
 
-// Playable reports whether the listener can play the whole track: as their
-// privilege says, or else as its fee does for anyone, VIP songs (1) and
-// paid albums (4) giving only a preview.
+// Playable reports whether the listener can play the whole track: as
+// Granted says, or from the fallback source, if the settings turned it on.
 func (t *Track) Playable() bool {
+	return t.Granted() || t.ProgramID == 0 && Fallback.Load()
+}
+
+// Granted reports whether NetEase lets the listener play the whole track:
+// as their privilege says, or else as its fee does for anyone, VIP songs
+// (1) and paid albums (4) giving only a preview.
+func (t *Track) Granted() bool {
 	if t.ProgramID > 0 {
 		// An episode's audio has no privilege: whether it streams, as a
 		// paid one bought, is up to its stream.

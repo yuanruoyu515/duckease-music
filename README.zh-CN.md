@@ -66,7 +66,7 @@ Go 原生界面，不套 WebView。下面是我自己 Mac 上的占用截图，*
 | 同步歌词、翻译 | 私人 FM、心动模式 | 封面手势、键盘操作 |
 | 收听和订阅播客 | 歌手页、专辑页、用户页 | macOS 可选刘海播放器 |
 
-功能可用性由平台决定。选了某种音质，不等于获得了对应播放权限。本项目不增加会员解锁功能，也不承诺绕过访问限制。
+功能可用性由平台决定。选了某种音质，不等于获得了对应播放权限。本项目不增加会员解锁功能，也不承诺绕过访问限制。唯一的例外默认关闭、需要自己打开：设置里的「备用音源」会在歌曲加载失败或显示为灰色时，向第三方的 [GD音乐台](https://music.gdstudio.xyz) 接口取播放地址。它是别人运营的免费服务，仅限个人学习使用，可能随时停止。
 
 ## 和原版有什么不同
 
@@ -141,6 +141,7 @@ Apple Silicon 产物在 `build/darwin-arm64/`，包含 `DuckEase Music.app` 和 
 - **[MyGo](https://github.com/egoist/mygo)**：原生应用与 UI 框架。
 - **[NeteaseCloudMusicApi](https://github.com/Binaryify/NeteaseCloudMusicApi)**：加密和登录流程参考。
 - **[folia-major](https://github.com/chthollyphile/folia-major)**：歌词动画参考。
+- **[GD音乐台(music.gdstudio.xyz)](https://music.gdstudio.xyz)**：可选的备用音源，由 GD Studio 提供，按站方要求注明出处。
 
 源码继续采用 **[AGPL-3.0](LICENSE)**。请保留原作者署名与许可声明，并按许可证履行再分发、修改后网络部署等情形下适用的义务。软件许可不授予音乐、歌词、封面或第三方商标的权利，详见 [NOTICE.md](NOTICE.md)。
 

@@ -48,6 +48,13 @@ type settings struct {
 	// HotComments shows a song's hot comments in its quiet parts, in
 	// place of the lyrics (quietComment): the listener turns it on.
 	HotComments bool `json:"hotComments"`
+	// HideComments hides songs' comments: the tab in Now Playing, and the
+	// hot comments in their quiet parts, which are then not loaded.
+	HideComments bool `json:"hideComments,omitempty"`
+	// Fallback plays songs NetEase will not stream from the fallback
+	// source, GD音乐台 (netease.FallbackURL): those that fail to load, and
+	// those greyed out. The listener turns it on.
+	Fallback bool `json:"fallback,omitempty"`
 	// Fog fills Now Playing's backdrop with fog of the cover's color,
 	// rising and swelling with the bass: an experiment the listener turns
 	// on.

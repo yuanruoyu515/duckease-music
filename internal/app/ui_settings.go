@@ -5,6 +5,8 @@ import (
 
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
+
+	"netease-music-mygo/internal/netease"
 )
 
 // openSettings shows the settings window, opening it the first time.
@@ -42,6 +44,7 @@ func (a *app) openSettings() {
 func (a *app) changed() {
 	a.settings.save()
 	a.settings.applyAppearance()
+	netease.Fallback.Store(a.settings.Fallback)
 	if a.notch != nil {
 		a.notch.setEnabled(a.settings.Notch)
 	}
@@ -140,8 +143,23 @@ func (a *app) settingsView(c *ui.Context) {
 					a.changed()
 				}
 			})
+			row("备用音源", "网易云加载失败的歌曲和歌单里的灰色歌曲，改从备用音源播放，两边都没有才提示无法播放。音源来自 "+netease.FallbackCredit+"，是第三方免费服务，仅供个人学习，可能随时停止；只在需要时请求，每 5 分钟最多 40 次", func() {
+				if ui.Switch(c.Key("fallback"), &s.Fallback).Label("备用音源").Changed() {
+					a.changed()
+				}
+			})
+			row("显示评论", "在播放页显示歌曲评论；关闭后不再加载评论，间奏热评也一并关闭", func() {
+				show := !s.HideComments
+				if ui.Switch(c.Key("comments"), &show).Label("显示评论").Changed() {
+					s.HideComments = !show
+					if s.HideComments && a.npPane == paneComments {
+						a.npPane = a.lyricsPaneChosen()
+					}
+					a.changed()
+				}
+			})
 			row("间奏时显示热评", "前奏、间奏与尾奏时，歌词处换成这首歌的热门评论", func() {
-				if ui.Switch(c.Key("hot-comments"), &s.HotComments).Label("间奏时显示热评").Changed() {
+				if ui.Switch(c.Key("hot-comments"), &s.HotComments).Label("间奏时显示热评").Disabled(s.HideComments).Changed() {
 					a.changed()
 				}
 			})

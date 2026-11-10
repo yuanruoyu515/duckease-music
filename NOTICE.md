@@ -22,10 +22,14 @@ The application source continues under **GNU Affero General Public License, vers
 
 The AGPL covers the licensed software; it does not license music, lyrics, album art, platform data, service access, or third-party marks. NetEase and NetEase Cloud Music names identify the interoperated service. MyGo identifies the original app or framework as the context requires. No endorsement is implied.
 
+The optional fallback source uses the public API of **GD音乐台(music.gdstudio.xyz)** by GD Studio, credited here and in the app's settings as the site asks. It is off by default. The site states its API is CC BY-NC 4.0, for study only and not for commercial use; this fork does not operate, proxy, or vouch for it.
+
 The README interface renders use invented track metadata, lyrics written for this project, and abstract covers generated locally. The separate 191 MB memory screenshot was supplied by the maintainer from their own Mac; it is a single local observation. Banner graphics and section icons were drawn for this fork; the duck mark follows this fork's existing app icon. These project-created documentation assets are offered under the same AGPL-3.0 license. This statement does not relicense any third-party content.
 
 ## 中文说明
 
 原始应用及大部分代码由 **egoist 与原项目贡献者**完成，本项目通过 **LeslieYon 的镜像**接续维护。Ruoyu / SysNomad 的修改日期为 **2026-11-08**，范围见上文。公开版从清理后的源码快照开始，本地仍保留原开发历史，不冒称原作，也不暗示正式交接。
+
+可选的备用音源使用 GD Studio 的 **GD音乐台(music.gdstudio.xyz)** 公开接口，按站方要求在此处和应用设置中注明出处，默认关闭。站方声明接口采用 CC BY-NC 4.0，仅供学习、禁止商用；本分支不运营、不转发、也不担保该服务。
 
 源码延续 AGPL-3.0；第三方依赖保留各自许可。音乐、歌词、封面、平台数据和商标的权利另行归属。原作者下线的事实以其公开仓库说明为来源，本分支不对相关争议作法律定性。

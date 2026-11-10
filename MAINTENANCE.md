@@ -85,6 +85,15 @@ LIVE=1 CGO_ENABLED=0 go test ./internal/netease/ -run Live -count=1 -v
 
 2026-11-08 的基线：除 `TestPrivilegesLive` 外全部通过。它失败是因为测试里的歌曲 `2652820720` 现在不登录就播不了，属于测试数据过期，接口没坏（`TestSongURLEapiLive` 能拿到播放地址）。`TestRecentPlaysLive`、`TestVIPSongPlayableLive` 需要设置 `NM_SESSION` 指向一份登录态，否则跳过。
 
+### 备用音源（GD音乐台）
+
+设置里的「备用音源」默认关闭。打开后，网易云取不到地址（含 `-460` 冷却期间）时向 `https://music-api.gdstudio.xyz/api.php?types=url&source=netease&id=<ID>&br=<码率>` 再要一次，只试一次；灰色歌曲（`Track.Granted()` 为假）不再问网易云，直接问它。代码在 `internal/netease/fallback.go` 和 `internal/player/player.go` 的 `openAny`。
+
+- 站方要求注明出处“GD音乐台(music.gdstudio.xyz)”，设置说明、README、NOTICE.md 里都写了，别删。
+- 站方限 5 分钟 50 次，`fallbackLimit` 设为 40，超出就不请求、直接报无法播放。
+- 返回的 `size` 实测是字节，文档写的 KB 不对。地址带时间戳会过期，只现取，不存。
+- 坏了先跑 `LIVE=1 CGO_ENABLED=0 go test ./internal/netease/ -run FallbackURLLive -count=1 -v`，日志里搜 `fallback source`。
+
 ### 按症状对照
 
 | 症状 | 多半是 | 改哪里 |

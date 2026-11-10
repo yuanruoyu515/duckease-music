@@ -638,7 +638,7 @@ func (p *Player) loadSkipping(at, skipped int, play bool, from time.Duration) {
 		if p.Quality != nil {
 			level = p.Quality()
 		}
-		info, s, err := p.openRetrying(t, level, gen)
+		info, s, err := p.openAny(t, level, gen)
 		p.post(func() {
 			if gen != p.gen {
 				if s != nil {
@@ -658,6 +658,8 @@ func (p *Player) loadSkipping(at, skipped int, play bool, from time.Duration) {
 					return
 				}
 				switch {
+				case err == netease.ErrFallbackUnavailable:
+					p.err = "网易云与备用音源都无法播放这首歌"
 				case err != netease.ErrUnavailable:
 				case t.ProgramID != 0:
 					p.err = "这期节目需要购买才能收听"
@@ -728,8 +730,40 @@ func blocked(err error) bool {
 // which is mostly so, before the track is skipped.
 var retryDelays = []time.Duration{500 * time.Millisecond, 1500 * time.Millisecond}
 
-// songURL finds where to stream a track; tests replace it.
-var songURL = netease.SongURL
+// songURL finds where to stream a track, and fallbackURL where the
+// fallback source streams it; tests replace them.
+var (
+	songURL     = netease.SongURL
+	fallbackURL = netease.FallbackURL
+)
+
+// openAny opens track t from NetEase, as openRetrying does; or, with the
+// fallback source turned on in the settings, from it, once, as NetEase
+// fails, and at once for a song NetEase greys out, which it would only
+// turn away. Both failing, it says why NetEase did, or that neither has
+// the song.
+func (p *Player) openAny(t netease.Track, level string, gen int) (*netease.Stream, stream, error) {
+	fallback := t.ProgramID == 0 && netease.Fallback.Load()
+	var err error
+	if !fallback || t.Granted() {
+		var info *netease.Stream
+		var s stream
+		info, s, err = p.openRetrying(t, level, gen)
+		if err == nil || !fallback || p.latest.Load() != int64(gen) {
+			return info, s, err
+		}
+	}
+	info, s, ferr := p.openFrom(t, level, fallbackURL, false)
+	if ferr == nil {
+		log.Printf("player: %d %q from the fallback source at %s", t.ID, t.Name, info.Level)
+		return info, s, nil
+	}
+	log.Printf("player: %d %q from the fallback source at %s: %v", t.ID, t.Name, level, ferr)
+	if err == nil || err == netease.ErrUnavailable {
+		return nil, nil, netease.ErrFallbackUnavailable
+	}
+	return nil, nil, err
+}
 
 // openRetrying opens track t as open does, trying again after retryDelays
 // while load gen is still the latest, and logs each failure.
@@ -764,13 +798,19 @@ func (p *Player) openRetrying(t netease.Track, level string, gen int) (*netease.
 // open opens track t's audio at level: kept in the cache, or else
 // streamed into it, and kept once it has all come in.
 func (p *Player) open(t netease.Track, level string) (*netease.Stream, stream, error) {
+	return p.openFrom(t, level, songURL, true)
+}
+
+// openFrom opens track t as open does, finding where it streams with
+// find, and waiting out NetEase's risk control if cool.
+func (p *Player) openFrom(t netease.Track, level string, find func(int64, string) (*netease.Stream, error), cool bool) (*netease.Stream, stream, error) {
 	dl, info, ok := p.Cache.lookup(t.ID, level)
 	if !ok {
-		if time.Now().UnixNano() < p.blockedUntil.Load() {
+		if cool && time.Now().UnixNano() < p.blockedUntil.Load() {
 			return nil, nil, errCooling
 		}
 		var err error
-		info, err = songURL(t.ID, level)
+		info, err = find(t.ID, level)
 		if err != nil {
 			return nil, nil, err
 		}
