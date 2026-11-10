@@ -8,7 +8,7 @@ The screenshots are rendered by the application's actual native Go views through
 NM_PRESS_SHOTS="$PWD/assets/screenshots" CGO_ENABLED=0   go test ./internal/app -run '^TestPressScreenshots$' -count=1
 ```
 
-`internal/app/press_test.go` renders home, Now Playing, the lyric stage, and the queue in light and dark appearances at 1200 × 800. Home greetings and date labels use the tester's current clock; screenshot pixels are deliberately not asserted.
+`internal/app/press_test.go` renders home, Now Playing, the lyric stage, the queue, and a playlist sorted by name in light and dark appearances at 1200 × 800, plus the Playback group of the settings window at 560 points wide. Home greetings and date labels use the tester's current clock; screenshot pixels are deliberately not asserted.
 
 The original demo lyrics are written for this repository and are not transcribed from a recording. Abstract artwork is drawn by `pressCover`. No music is played or downloaded. Inspect new images before committing them.
 

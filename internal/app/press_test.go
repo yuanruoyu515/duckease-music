@@ -27,10 +27,18 @@ func TestPressScreenshots(t *testing.T) {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	for _, scene := range []string{"home", "now-playing", "stage", "queue"} {
+	for _, scene := range []string{"home", "now-playing", "stage", "queue", "playlist", "settings"} {
 		for _, dark := range []bool{false, true} {
 			a := pressApp()
+			view, w, h := a.view, 1200, 800
 			switch scene {
+			case "playlist":
+				pl := a.featured[len(a.featured)-1]
+				a.playlists[pl.ID] = &pl
+				a.route = route{page: pagePlaylist, id: pl.ID}
+				a.plFilter = plFilter{id: pl.ID, sort: sortName}
+			case "settings":
+				view, w, h = a.settingsView, 560, 1100
 			case "now-playing":
 				a.nowPlaying = true
 			case "stage":
@@ -38,10 +46,20 @@ func TestPressScreenshots(t *testing.T) {
 			case "queue":
 				a.nowPlaying, a.npPane = true, paneQueue
 			}
-			tt := ui.NewTester(a.view, 1200, 800)
+			tt := ui.NewTester(view, w, h)
 			tt.SetDark(dark)
 			tt.Advance(2 * time.Second)
 			tt.Frame()
+			img := tt.Image()
+			if scene == "settings" {
+				// The playback group, where the newest switches are.
+				from, ok := tt.Find("播放")
+				to, ok2 := tt.Find("缓存")
+				if !ok || !ok2 {
+					t.Fatal("no playback group")
+				}
+				img = img.SubImage(image.Rect(0, int(from.Y-14), w, int(to.Y-10))).(*image.RGBA)
+			}
 			name := scene + "-light.png"
 			if dark {
 				name = scene + "-dark.png"
@@ -50,7 +68,7 @@ func TestPressScreenshots(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			err = png.Encode(f, tt.Image())
+			err = png.Encode(f, img)
 			closeErr := f.Close()
 			if err != nil {
 				t.Fatal(err)

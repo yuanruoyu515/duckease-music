@@ -49,6 +49,15 @@ These are renders of the app's actual Go views, using invented songs, original d
   </tr>
 </table>
 
+## New in 0.1.25-duckease.2
+
+<table>
+  <tr>
+    <td width="58%" valign="top"><b>Sort and search a playlist</b><br>Sort by name, artist, album, or length, or reverse the list. Chinese titles sort by pinyin. <b>Feeling lucky</b> shuffles the list into a new order each time you press it, and playback follows the order on screen. The search box filters by title, artist, or album. If a song isn't in the playlist, one click searches the whole catalog.<br><br><picture><source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/playlist-dark.png"><img alt="A demo playlist sorted by name, with the sort menu, the Feeling lucky button, and the playlist search box above the songs" src="assets/screenshots/playlist-light.png"></picture></td>
+    <td width="42%" valign="top"><b>Fallback source and a comments switch</b><br>Both are under Settings → Playback. <b>Fallback source</b> is off by default. When it's on, songs that fail to load and greyed-out songs are fetched from <a href="https://music.gdstudio.xyz">GD音乐台(music.gdstudio.xyz)</a>. The app reports a song as unplayable only when both sources fail. <b>Show comments</b> turns the comments tab and the hot comments between verses on or off.<br><br><picture><source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/settings-dark.png"><img alt="The Playback settings group, with the Fallback source and Show comments switches" src="assets/screenshots/settings-light.png"></picture></td>
+  </tr>
+</table>
+
 ## 191 MB on my Mac
 
 A native Go app with no WebView. This is my own local memory snapshot: **191 MB** for DuckEase Music.
@@ -75,12 +84,13 @@ Availability comes from the platform. Selecting a quality does not create an ent
 - Removed local podcast transcription, which depended on unavailable speech-library downloads. Podcast listening remains.
 - Added bounded playback retries and diagnostic logging. When the platform returns risk-control code `-460`, the player stops and cools down instead of skipping through the queue.
 - Removed the inherited website, its music demo, and the original author's release/signing workflow from this publication.
+- Added playlist sorting, Feeling lucky, and playlist search; an optional fallback source; and a switch for comments.
 
 See [provenance and modification dates](NOTICE.md), [changes](CHANGELOG.md), and [maintenance notes](MAINTENANCE.md). This repository starts from a clean publication snapshot; older local development history is not uploaded with it.
 
 ## Install on macOS
 
-[**Download the macOS DMG**](https://github.com/yuanruoyu515/duckease-music/releases/download/v0.1.25-duckease.1/duckease-music-0.1.25-duckease.1.dmg) · [Release notes and checksums](https://github.com/yuanruoyu515/duckease-music/releases/tag/v0.1.25-duckease.1)
+[**Download the macOS DMG**](https://github.com/yuanruoyu515/duckease-music/releases/download/v0.1.25-duckease.2/duckease-music-0.1.25-duckease.2.dmg) · [Release notes and checksums](https://github.com/yuanruoyu515/duckease-music/releases/tag/v0.1.25-duckease.2)
 
 1. Download and open the DMG.
 2. Drag **DuckEase Music** onto **Applications** beside it.

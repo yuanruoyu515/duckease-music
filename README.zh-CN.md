@@ -49,6 +49,15 @@
   </tr>
 </table>
 
+## 0.1.25-duckease.2 新功能
+
+<table>
+  <tr>
+    <td width="58%" valign="top"><b>歌单排序与搜索</b><br>可以按歌名、歌手、专辑、时长排序，也可以倒序，中文按拼音排。<b>试试手气</b>每点一次就打乱成新的顺序，播放按页面上的顺序走。搜索框按歌名、歌手、专辑筛选，歌单里没有的歌，点一下就能到全部歌曲里搜。<br><br><picture><source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/playlist-dark.png"><img alt="按歌名排序的演示歌单，歌曲上方是排序菜单、试试手气按钮和歌单内搜索框" src="assets/screenshots/playlist-light.png"></picture></td>
+    <td width="42%" valign="top"><b>备用音源与评论开关</b><br>都在「设置 → 播放」里。<b>备用音源</b>默认关闭，打开后，网易云加载失败的歌和歌单里的灰色歌曲改从 <a href="https://music.gdstudio.xyz">GD音乐台(music.gdstudio.xyz)</a> 取，两边都没有才提示无法播放。<b>显示评论</b>控制播放页的评论和间奏热评。<br><br><picture><source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/settings-dark.png"><img alt="设置的播放分组，含备用音源与显示评论两个开关" src="assets/screenshots/settings-light.png"></picture></td>
+  </tr>
+</table>
+
 ## 本机内存截图：191 MB
 
 Go 原生界面，不套 WebView。下面是我自己 Mac 上的占用截图，**DuckEase Music：191 MB**。
@@ -75,12 +84,13 @@ Go 原生界面，不套 WebView。下面是我自己 Mac 上的占用截图，*
 - 去掉了因语音库下载失效而无法使用的本地播客字幕；播客仍能收听。
 - 播放失败时有限次数重试并记录诊断日志；收到风控代码 `-460` 时停下冷却，避免连续跳过整张歌单。
 - 公开版移除了继承的旧官网、网站歌曲演示和原作者的签名发布工作流。
+- 新增歌单排序、试试手气、歌单内搜索，可选的备用音源，以及评论开关。
 
 具体来源与修改日期见 [NOTICE.md](NOTICE.md)，改动见[更新日志](CHANGELOG.md)，技术细节见[维护说明](MAINTENANCE.md)。公开仓库从清理后的源码快照开始，较早的本地开发历史不随之上传。
 
 ## macOS 安装
 
-[**下载 macOS DMG 安装包**](https://github.com/yuanruoyu515/duckease-music/releases/download/v0.1.25-duckease.1/duckease-music-0.1.25-duckease.1.dmg) · [发布说明与校验值](https://github.com/yuanruoyu515/duckease-music/releases/tag/v0.1.25-duckease.1)
+[**下载 macOS DMG 安装包**](https://github.com/yuanruoyu515/duckease-music/releases/download/v0.1.25-duckease.2/duckease-music-0.1.25-duckease.2.dmg) · [发布说明与校验值](https://github.com/yuanruoyu515/duckease-music/releases/tag/v0.1.25-duckease.2)
 
 1. 下载并打开 DMG。
 2. 把 **DuckEase Music** 拖进旁边的 **Applications（应用程序）**。
