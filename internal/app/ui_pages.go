@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"math/rand/v2"
 	"strings"
 	"time"
 
@@ -253,24 +254,63 @@ func (a *app) playlistPage(c *ui.Context) {
 	if f.id != id {
 		*f = plFilter{id: id}
 	}
-	shown := f.match(pl.Tracks)
-	header := func(c *ui.Context) { a.playlistHeader(c, pl) }
+	tracks := f.tracks(pl)
+	shown := f.match(tracks)
+	header := func(c *ui.Context) {
+		a.playlistHeader(c, pl)
+		// What orders and searches the songs, above them.
+		ui.Row(c).Gap(10).AlignItems(ui.Center).Padding(0, 12, 14, 12).Children(func() {
+			a.playlistSort(c)
+			ui.Box(c).Grow(1)
+			a.playlistSearch(c)
+		})
+	}
 	if shown == nil {
-		a.trackRows(c, pl.Tracks, true, header)
+		a.trackRows(c, tracks, true, header)
 		return
 	}
 	var footer []func(c *ui.Context)
 	if len(shown) == 0 {
 		footer = append(footer, func(c *ui.Context) { a.playlistNoMatch(c, strings.TrimSpace(f.query)) })
 	}
-	a.trackRowsOf(c, pl.Tracks, shown, true, header, footer...)
+	a.trackRowsOf(c, tracks, shown, true, header, footer...)
 }
 
-// plFilter is what the songs of the playlist id are searched for.
+// plFilter is what the songs of the playlist id are searched for, and the
+// order they are listed and played in.
 type plFilter struct {
 	id    int64
 	query string
 	box   ui.Handle
+	sort  int    // sortDefault and on
+	luck  uint64 // the seed of the lucky order, new each time it is chosen
+	order plOrder
+}
+
+// tracks returns the playlist's songs in the order chosen.
+func (f *plFilter) tracks(pl *netease.Playlist) []netease.Track {
+	if f.id != pl.ID {
+		return pl.Tracks
+	}
+	return f.order.tracks(pl.Tracks, f.sort, f.luck)
+}
+
+// playlistSort is the button that chooses the order of the playlist's
+// songs, and the one that shuffles them anew.
+func (a *app) playlistSort(c *ui.Context) {
+	p := a.pal
+	f := &a.plFilter
+	b := pillButton(c.Key("sort"), iconUpDown, plSorts[f.sort], p.hover.Over(p.bg), p.text)
+	b.Menu(func(m *ui.Menu) {
+		for i, label := range plSorts[:sortLucky] {
+			if m.Item(label).Checked(f.sort == i).Chosen() {
+				f.sort = i
+			}
+		}
+	})
+	if pillButton(c.Key("lucky"), iconDice, "试试手气", p.hover.Over(p.bg), p.text).Clicked() {
+		f.sort, f.luck = sortLucky, rand.Uint64()
+	}
 }
 
 // match returns the indices of the tracks the query finds, in order, or
@@ -364,7 +404,8 @@ func (a *app) playlistHeader(c *ui.Context, pl *netease.Playlist) {
 					if a.pl.Shuffle() {
 						a.pl.ToggleShuffle()
 					}
-					a.pl.PlayQueue(pl.Tracks, firstPlayable(pl.Tracks))
+					tracks := a.plFilter.tracks(pl)
+					a.pl.PlayQueue(tracks, firstPlayable(tracks))
 				}
 				if pillButton(c.Key("shuffle"), iconShuffle, "随机播放", p.hover.Over(p.bg), p.text).Clicked() {
 					if !a.pl.Shuffle() {
@@ -408,8 +449,6 @@ func (a *app) playlistHeader(c *ui.Context, pl *netease.Playlist) {
 						a.startHeartMode()
 					}
 				}
-				ui.Box(c).Grow(1)
-				a.playlistSearch(c)
 			})
 		})
 	})
