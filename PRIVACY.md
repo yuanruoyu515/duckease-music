@@ -10,7 +10,7 @@
 
 在设置中打开「备用音源」后，网易云加载失败的歌曲和灰色歌曲会把歌曲 ID 与音质发给第三方的 `music-api.gdstudio.xyz`（GD音乐台），它会获得连接所需的网络信息，但不会收到登录态。这个选项默认关闭。
 
-代码中没有维护者运营的登录服务器、音乐代理、遥测或崩溃上传服务。原作者的自动更新功能已移除。下载 Go 依赖、访问 GitHub、点击外部链接也会产生对相应服务的请求。README 的横幅、徽章和截图随仓库存放，由 GitHub 提供。
+代码中没有维护者运营的登录服务器、音乐代理、遥测或崩溃上传服务。原作者的自动更新功能已移除。应用会在启动后和每天向 `api.github.com` 查询本仓库的最新 Release，请求只带应用版本号，可在「设置 → 更新」关闭。下载 Go 依赖、访问 GitHub、点击外部链接也会产生对相应服务的请求。README 的横幅、徽章和截图随仓库存放，由 GitHub 提供。
 
 ### 设备上保存什么
 
@@ -36,7 +36,7 @@ The app contacts NetEase API hosts, including `music.163.com` and `interfacepc.m
 
 With the optional **Fallback source** setting on, songs that fail to load or show greyed out send their track ID and quality to the third-party `music-api.gdstudio.xyz` (GD音乐台), which sees connection metadata but not the login session. The setting is off by default.
 
-This code has no maintainer-operated login server, music proxy, telemetry, or crash-upload service. The original updater has been removed. Dependency downloads, GitHub visits, and external links contact their respective services. README graphics, badges, and screenshots are stored in the repository and served by GitHub.
+This code has no maintainer-operated login server, music proxy, telemetry, or crash-upload service. The original updater has been removed. The app asks `api.github.com` for this repository's latest release at launch and once a day, sending only its version in the User-Agent; turn it off under Settings → Updates. Dependency downloads, GitHub visits, and external links contact their respective services. README graphics, badges, and screenshots are stored in the repository and served by GitHub.
 
 Packaged builds use the system credential store for login data; development builds save a local `session` file, which should not be treated as an encrypted vault. Settings, device state, search history, and playback state remain in the application data directory. `session.json` contains playback state and is distinct from the login session file. Audio and artwork are cached locally. Diagnostic logs may contain track IDs, quality choices, request errors, and other troubleshooting details.
 

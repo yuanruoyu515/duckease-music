@@ -139,7 +139,10 @@ type app struct {
 
 	settings    settings
 	settingsWin *mygo.Window
-	cacheUsed   int64 // the bytes the song cache takes, -1 until measured
+	aboutWin    *mygo.Window
+	// updateChecking says a check for updates is on its way.
+	updateChecking bool
+	cacheUsed      int64 // the bytes the song cache takes, -1 until measured
 
 	restored     bool   // playback picked up where it was left
 	savedSession string // the session as last kept
@@ -255,6 +258,7 @@ func Run() error {
 		// Shown or switched to the morning after, it shows the new day's.
 		a.win.OnFocus(a.freshenHome)
 		a.applyTray()
+		a.scheduleUpdates(updateFirst)
 		if shotHook != nil {
 			shotHook(a)
 		}

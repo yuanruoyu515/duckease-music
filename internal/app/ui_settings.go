@@ -227,6 +227,23 @@ func (a *app) settingsView(c *ui.Context) {
 			})
 		})
 
+		group("更新", func() {
+			row("自动检查更新", "启动后和每天检查一次 GitHub 上的新版本，有新版本时提示下载，也可以忽略这个版本", func() {
+				if ui.Switch(c.Key("update-check"), &s.UpdateCheck).Label("自动检查更新").Changed() {
+					a.changed()
+				}
+			})
+			row("当前版本 "+appVersion(), "", func() {
+				label := "检查更新"
+				if a.updateChecking {
+					label = "正在检查…"
+				}
+				if ui.Button(c.Key("check-update"), label).Disabled(a.updateChecking).Clicked() {
+					a.checkUpdate(true)
+				}
+			})
+		})
+
 		group("账号", func() {
 			if a.profile == nil {
 				row("未登录", "登录后，每日推荐与歌单将根据你的口味生成", func() {

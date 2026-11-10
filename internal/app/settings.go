@@ -65,6 +65,11 @@ type settings struct {
 	// CacheMB is how many megabytes the songs kept on disk may take; 0
 	// keeps none.
 	CacheMB int `json:"cacheMB"`
+	// UpdateCheck checks this fork's GitHub releases for a newer version
+	// after launch and once a day; SkippedVersion is one the listener
+	// chose not to hear of again.
+	UpdateCheck    bool   `json:"updateCheck"`
+	SkippedVersion string `json:"skippedVersion,omitempty"`
 	// SearchHistory keeps submitted keywords, most recent first.
 	SearchHistory []string `json:"searchHistory,omitempty"`
 
@@ -72,7 +77,7 @@ type settings struct {
 }
 
 func defaultSettings() settings {
-	return settings{NotchActivity: true, Quality: "exhigh", Appearance: "system", Volume: 0.8, Normalize: true, AppIcon: "dock-and-menubar", CacheMB: 2048}
+	return settings{NotchActivity: true, Quality: "exhigh", Appearance: "system", Volume: 0.8, Normalize: true, AppIcon: "dock-and-menubar", CacheMB: 2048, UpdateCheck: true}
 }
 
 func settingsPath() (string, error) {

@@ -27,7 +27,7 @@ brew install go                # 需要 go.mod 里写的 Go 1.27.3
 
 原作者下线后，有两样功能依赖的下载地址没了，这个分支直接删掉了它们：
 
-- **自动更新**：原来查的是 egoist 的 Release，已经删了。插件、菜单和托盘里的「检查更新…」、设置里的「更新」一组，以及 `mygo.json` 的 `updates` 都已去掉。
+- **自动更新**：原来查的是 egoist 的 Release，MyGo 的 updater 插件和 `mygo.json` 的 `updates` 都已去掉。现在 `internal/app/update.go` 只查 `yuanruoyu515/duckease-music` 的 latest release，比较版本号（`newerVersion`，先比 `0.1.25`，再比 `duckease.N`），有新版就弹窗提示下载 DMG、稍后提醒或忽略此版本，不自动安装。发版时标签必须是 `v<版本>`，并附上 `.dmg`，否则提示会打开 Release 页面。
 - **播客字幕**（本机语音识别）：sherpa-onnx 动态库原本从 egoist 的 Release 下载，现在是 404。`internal/speech`、`scripts/sherpa`、正在播放的「字幕」标签和设置里的「播客」一组都已去掉。播客本身照常能听。
 
 ## 公开版发布范围

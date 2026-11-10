@@ -80,7 +80,7 @@ Availability comes from the platform. Selecting a quality does not create an ent
 ## What changed from MyGo 云音乐
 
 - Renamed the app to **DuckEase Music**, with a duck icon and migration of older local data folders.
-- Removed the old automatic updater, which depended on the original author's releases.
+- Replaced the old automatic updater, which depended on the original author's releases, with a check of this repository's releases that only prompts you to download.
 - Removed local podcast transcription, which depended on unavailable speech-library downloads. Podcast listening remains.
 - Added bounded playback retries and diagnostic logging. When the platform returns risk-control code `-460`, the player stops and cools down instead of skipping through the queue.
 - Removed the inherited website, its music demo, and the original author's release/signing workflow from this publication.
@@ -98,7 +98,7 @@ See [provenance and modification dates](NOTICE.md), [changes](CHANGELOG.md), and
 
 Requires macOS **13+**. The universal app contains Apple Silicon and Intel code; local build and packaging checks ran on Apple Silicon, with no Intel runtime verification. This release is **ad hoc signed and not Apple notarized**. If macOS blocks it, follow [Apple's instructions for an unidentified developer](https://support.apple.com/en-us/102445), after verifying the download and its checksum. Keep system-wide security protections enabled.
 
-There is no automatic updater. Download future versions from this repository's Releases. The matching source is available under the release tag; license and source information are also bundled in the app.
+The app checks this repository's releases at launch and once a day. When a newer version is out, it offers to download the DMG, remind you later, or skip that version. It never installs anything by itself, and you can turn the check off in Settings → Updates. The matching source is available under the release tag; license and source information are also bundled in the app.
 
 ## Build it
 
