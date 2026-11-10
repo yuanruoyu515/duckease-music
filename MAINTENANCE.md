@@ -134,6 +134,30 @@ LIVE=1 CGO_ENABLED=0 go test ./internal/netease/ -run Live -count=1 -v
 - api-enhanced 现在取歌曲地址（`module/song_url_v1.js`）已经不走我们用的 PC eapi，改走 xeapi（伪装成 Android 客户端，域名 `interface3.music.163.com`，带公钥和会话密钥）。xeapi 支持是 2026-05-29 加进去的（提交 `d0935f6`）。如果 eapi 取地址以后越来越常被拒，就移植 xeapi；不过 issue #300 用的就是 api-enhanced，照样被拒，所以 xeapi 也不保证管用。
 - 由此得出的做法，本项目已经照着做了：被拒就冷却，不连续重试，同一首歌不重复请求，eapi 的 User-Agent 和请求头保持同一个客户端身份。以后加预加载、批量拉歌词这类功能时，要控制并发，别在一两秒里发出几十个请求。
 
+## 要盯的外部变化（2026-11-10 整理）
+
+### 可能让 App 直接坏掉的
+
+按出事概率从高到低：
+
+1. **网易云接口。** eapi 的客户端身份（`eapi.go` 里的 `appver` 3.1.17.204416、`versioncode` 140、`eapiKey`）被淘汰时，登录、取歌曲地址、逐字歌词会一起坏。取地址接口 `/api/song/enhance/player/url/v1` 的路径或字段（`level`、`freeTrialInfo`）改了，就会能登录但放不了歌。`privilege` 的 `st`、`pl` 改名，灰色歌的判断会全错。CDN 开始校验 Referer 或 User-Agent 时，地址拿得到但下载 403。`-460` 风控收紧时，30 秒冷却（`blockCooldown`）可能不够。最早的信号在 api-enhanced 的 issue 区和 `util/request.js`。
+2. **GD音乐台。** 停服、换域名、改返回字段（`url`、`br`、`size`）或收紧频率限制（现在是 5 分钟 50 次）。功能默认关闭，出事也只是降级成无法播放。
+3. **GitHub Release。** 更新检查读 `releases/latest`。发版时标签必须是 `v<版本>`，附 `.dmg`，不能勾预发布：预发布不会被 latest 返回，老版本就收不到提示。
+4. **macOS。** 对 ad hoc 签名、未公证 App 的拦截越来越严，这是分发上最大的风险。钥匙串政策变化可能读不出登录态。刘海播放器依赖菜单栏附近的窗口层级，系统大版本后最容易错位。Icon Composer 格式变了要重新导出图标。
+
+### 值得跟上的
+
+1. **MyGo Music 的播放器修复。** 最值得移植的是 `ce1b2ea`（提前下载下一首，可以在没下完的歌里拖动进度）。其次是 `0927157`（频谱只留最后几秒）、`c360a84`（封面按显示尺寸下载、大图限额解码）、`b021067`（改用 MyGo 自带的 FLAC 解码，可能去掉 `mewkiz/flac`）、`aabab00`（随机播放从随机一首开始）。它已经在 MyGo 0.8 上，有些改动要先升 MyGo 才能搬。
+2. **MyGo 0.7 → 0.8。** 本项目固定在 `v0.7.1-0.20261027023711-da3657e7f86a`，上游已发 `v0.8.3`，MyGo Music 用 `v0.8.4` 预发布版。开分支升级，按「依赖」一节跑迁移和全部测试，参照 MyGo Music 升级时改过的地方。
+3. **Go。** 1.27.x 的小版本基本每月一次，多是 `net/http`、`crypto/tls` 的安全修复，跟上即可：改 `go.mod` 的 `go` 行，`brew upgrade go`，跑测试。Go 1.28 预计 2027 年 2 月，等 MyGo 支持了再升。`golang.org/x/text`、`x/image` 等依赖用 `govulncheck ./...` 定期扫。
+
+### 节奏
+
+- 每次发版前：`LIVE=1` 接口测试（含 `FallbackURLLive`）；看 MyGo Music 最近改了 `internal/player`、`internal/lyrics` 的什么；看 api-enhanced 最新 issue。
+- 每月：Go 小版本、`govulncheck`。
+- 出播放问题：先看日志，再去 MyGo Music 找修复，再看 api-enhanced、AlgerMusicPlayer。
+- 找时机做一次大的：升 MyGo 0.8，顺带移植提前下载下一首。
+
 ## 风险提醒
 
 - 原作者公开说明收到网易函件后下线。本分支使用独立名称，不暗示原作者正式交接、平台授权或背书。发布时保留署名、来源和免责声明。
