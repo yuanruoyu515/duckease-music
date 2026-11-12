@@ -121,17 +121,17 @@ for copy in copies {
         rgb(0xFFFFFF, 0.9).setStroke()
         let disc = NSBezierPath(ovalIn: sleeve.insetBy(dx: 14, dy: 14)); disc.lineWidth = 4; disc.stroke()
 
-        text("晚风经过", x: sleeve.maxX + 16, y: card.minY + 37, font: font(19, bold: true, chinese: true), color: ink)
+        text("最美的期待", x: sleeve.maxX + 16, y: card.minY + 37, font: font(19, bold: true, chinese: true), color: ink)
         text("DuckEase Demo · 给自己一点时间", x: sleeve.maxX + 16, y: card.minY + 62, font: font(14, chinese: true), color: muted)
 
         // Divider, then the current lyric line.
         rgb(dark ? 0x2A2F38 : 0xE8EBF1).setFill()
         NSRect(x: card.minX + 360, y: card.minY + 20, width: 1, height: 44).fill()
         text(copy.lyricLabel, x: card.minX + 388, y: card.minY + 34, font: font(11, bold: true, chinese: copy.code != "en"), color: faint, tracking: copy.code == "en" ? 1.4 : 0.5)
-        text("晚风经过，灯一盏盏亮了", x: card.minX + 388, y: card.minY + 62, font: font(21, bold: true, chinese: true), color: red)
+        text("我要握住 一个最美的梦 给未来的自己", x: card.minX + 388, y: card.minY + 62, font: font(21, bold: true, chinese: true), color: red)
 
         // Progress and controls.
-        let barX = card.minX + 760, barW: CGFloat = 250, barY = card.minY + 42
+        let barX = card.minX + 790, barW: CGFloat = 240, barY = card.minY + 42
         roundRect(NSRect(x: barX, y: barY - 2, width: barW, height: 4), 2, fill: track)
         roundRect(NSRect(x: barX, y: barY - 2, width: barW * 0.33, height: 4), 2, fill: red)
         NSBezierPath(ovalIn: NSRect(x: barX + barW * 0.33 - 6, y: barY - 6, width: 12, height: 12)).fill()
