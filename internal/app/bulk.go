@@ -157,6 +157,10 @@ func addInChunks(pid int64, songs []int64) error {
 // the app and then with NetEase, which may refuse: they come back then.
 // Quiet, it says nothing once done, as when moving them.
 func (a *app) removeSongs(pid int64, songs []int64, quiet bool) {
+	if a.likedList(pid) {
+		a.unlikeSongs(pid, songs, quiet)
+		return
+	}
 	pl := a.playlists[pid]
 	var before []netease.Track
 	if pl != nil {
@@ -182,6 +186,62 @@ func (a *app) removeSongs(pid int64, songs []int64, quiet bool) {
 			}
 			if !quiet {
 				a.toast = fmt.Sprintf("已移除 %d 首歌曲", len(songs))
+			}
+			if a.profile != nil {
+				a.loadMine(a.profile.UserID)
+			}
+		})
+	}()
+}
+
+// likedList reports whether pid is the listener's liked songs, whose
+// songs leave it by being unliked.
+func (a *app) likedList(pid int64) bool {
+	return slices.ContainsFunc(a.mine, func(pl netease.Playlist) bool { return pl.ID == pid && pl.SpecialType == 5 })
+}
+
+// unlikeSongs takes songs out of the liked songs, playlist pid, by
+// unliking each: at once in the app, then with NetEase one after the
+// other, as a heart's click does. Those it refuses come back.
+func (a *app) unlikeSongs(pid int64, songs []int64, quiet bool) {
+	pl := a.playlists[pid]
+	var before []netease.Track
+	if pl != nil {
+		before = pl.Tracks
+		pl.Tracks = slices.DeleteFunc(slices.Clone(before), func(t netease.Track) bool { return slices.Contains(songs, t.ID) })
+	}
+	if a.liked == nil {
+		a.liked = map[int64]bool{}
+	}
+	for _, id := range songs {
+		a.setLiked(id, false)
+	}
+	go func() {
+		var failed []int64
+		for i, id := range songs {
+			if i > 0 {
+				time.Sleep(bulkPause)
+			}
+			if likeSong(id, false) != nil {
+				failed = append(failed, id)
+			}
+		}
+		a.post(func() {
+			for _, id := range failed {
+				a.setLiked(id, true)
+			}
+			if len(failed) > 0 {
+				if pl != nil && a.playlists[pid] == pl {
+					// Back, those NetEase still likes, where they were.
+					pl.Tracks = slices.DeleteFunc(slices.Clone(before), func(t netease.Track) bool {
+						return slices.Contains(songs, t.ID) && !slices.Contains(failed, t.ID)
+					})
+				}
+				a.toast = fmt.Sprintf("%d 首歌曲没能取消喜欢，请稍后再试", len(failed))
+				return
+			}
+			if !quiet {
+				a.toast = fmt.Sprintf("已从我喜欢的音乐中移除 %d 首歌曲", len(songs))
 			}
 			if a.profile != nil {
 				a.loadMine(a.profile.UserID)
@@ -225,7 +285,8 @@ func (a *app) pickBar(c *ui.Context) {
 	p := a.pal
 	tracks := a.plFilter.tracks(pl)
 	ids := a.pickedSongs(tracks)
-	own := a.editable(pl.ID) != nil
+	// The liked songs too: their songs leave by being unliked.
+	own := a.editable(pl.ID) != nil || a.likedList(pl.ID)
 	c.OnShortcut(0, ui.KeyEscape, a.stopPicking)
 	c.OnShortcut(ui.Cmd, ui.KeyA, func() {
 		for _, t := range tracks {
@@ -294,7 +355,7 @@ func (a *app) pickBar(c *ui.Context) {
 				if dim(pillButton(c.Key("remove"), iconTrash, "移除", p.hover.Over(p.bg), p.text)).Clicked() {
 					pid := pl.ID
 					a.ask = confirmDialog{open: true, title: "移除歌曲",
-						body:   fmt.Sprintf("从“%s”中移除所选的 %d 首歌曲？", pl.Name, len(ids)),
+						body:   removeBody(pl.Name, len(ids), a.likedList(pid)),
 						action: "移除",
 						do: func() {
 							a.removeSongs(pid, ids, false)
@@ -859,4 +920,13 @@ func (a *app) coverItems(m *ui.Menu, id int64) {
 	if _, ok := a.covers[id]; ok && m.Item("恢复默认封面").Chosen() {
 		a.resetCover(id)
 	}
+}
+
+// removeBody asks whether to take n songs out of the playlist name: from
+// the liked songs, by unliking them.
+func removeBody(name string, n int, liked bool) string {
+	if liked {
+		return fmt.Sprintf("从“%s”中移除所选的 %d 首歌曲？这些歌会取消喜欢。", name, n)
+	}
+	return fmt.Sprintf("从“%s”中移除所选的 %d 首歌曲？", name, n)
 }

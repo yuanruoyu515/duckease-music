@@ -230,3 +230,39 @@ func TestManagerCopiesSaved(t *testing.T) {
 		t.Errorf("added %+v, want 7 and 8 to playlist 30", got)
 	}
 }
+
+// The liked songs' picked songs can be removed too, which unlikes each of
+// them, one request at a time.
+func TestRemovePickedLikedSongs(t *testing.T) {
+	unliked := make(chan int64, 2)
+	likeSong = func(id int64, like bool) error {
+		if !like {
+			unliked <- id
+		}
+		return nil
+	}
+	defer func() { likeSong = netease.Like }()
+
+	a := pickTestApp(t)
+	a.playlists[5] = &netease.Playlist{ID: 5, Name: "小明喜欢的音乐", SpecialType: 5, Tracks: a.playlists[10].Tracks}
+	a.liked = map[int64]bool{1: true, 2: true, 3: true}
+	a.route = route{page: pagePlaylist, id: 5}
+	a.startPicking(5)
+	a.pick.ids[1], a.pick.ids[3] = true, true
+	tt := ui.NewTester(a.view, 1200, 800)
+	tt.Frame()
+	if err := tt.Click("移除"); err != nil {
+		t.Fatalf("the liked songs offer no removing: %v", err)
+	}
+	tt.Frame()
+	if !a.ask.open {
+		t.Fatal("did not ask before removing")
+	}
+	a.ask.do()
+	if got := []int64{<-unliked, <-unliked}; !slices.Equal(got, []int64{1, 3}) {
+		t.Errorf("unliked %v, want 1 and 3", got)
+	}
+	if a.liked[1] || a.liked[3] || !a.liked[2] || len(a.playlists[5].Tracks) != 1 {
+		t.Errorf("liked %v, %d listed; want song 2 alone", a.liked, len(a.playlists[5].Tracks))
+	}
+}
