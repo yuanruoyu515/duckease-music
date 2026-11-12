@@ -390,32 +390,7 @@ func (a *app) playlistHeader(c *ui.Context, pl *netease.Playlist) {
 	p := a.pal
 	ui.Row(c).Gap(28).AlignItems(ui.End).Padding(0, 0, 26, 0).Children(func() {
 		ui.Box(c.Key("cover-box")).Size(212, 212).Radius(14).Shadow(0, 18, 40, -10, p.cardShade).Children(func() {
-			if a.isMine(pl.ID) {
-				// The listener's own: a click changes its cover.
-				b := ui.ButtonBase(c.Key("cover")).Absolute().Top(0).Left(0).Right(0).Bottom(0).Radius(14).
-					FocusRing(false).Label("更换封面")
-				hover := float32(0)
-				if b.Hovered() {
-					hover = 1
-				}
-				hover = b.AnimateTo("hover", hover, ui.Animation{Duration: 140 * time.Millisecond})
-				b.Children(func() {
-					a.coverFill(c, a.plCover(pl), 600, 14)
-					if hover > 0 {
-						ui.Column(c).Absolute().Top(0).Left(0).Right(0).Bottom(0).Radius(14).Center().Gap(6).
-							Background(ui.RGBA(0, 0, 0, 0.45)).Opacity(hover).PassThrough().Children(func() {
-							ui.Icon(c, iconImage).Size(26, 26).TextColor(white)
-							ui.Text(c, "更换封面").FontSize(13).FontWeight(600).TextColor(white)
-						})
-					}
-				})
-				b.ContextMenu(func(m *ui.Menu) { a.coverItems(m, pl.ID) })
-				if b.Clicked() {
-					a.chooseCover(pl.ID)
-				}
-			} else {
-				a.coverFill(c, a.plCover(pl), 600, 14)
-			}
+			a.coverFill(c, a.plCover(pl), 600, 14)
 			if a.profile != nil && pl.UpdateFreq == "" {
 				a.coverMoreButton(c).Menu(a.playlistMenu(pl))
 			}
