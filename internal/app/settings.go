@@ -11,18 +11,6 @@ import (
 // settings are the listener's choices, kept in settings.json in the user
 // data directory.
 type settings struct {
-	// Notch shows the quick player around the notch: the listener turns
-	// it on.
-	Notch bool `json:"notch"`
-	// NotchActivity shows the cover and the music's levels beside the
-	// notch while music plays, which hides the menu bar there.
-	NotchActivity bool `json:"notchActivity"`
-	// NotchVirtual keeps a notch of the app's own showing at the top of a
-	// display without one; else it shows only while the pointer asks.
-	NotchVirtual bool `json:"notchVirtual"`
-	// NotchGreeted says the notch showed itself, once, as the first song
-	// played (greet).
-	NotchGreeted bool `json:"notchGreeted"`
 	// Quality is the level of the streams: standard, higher, exhigh,
 	// lossless or hires.
 	Quality string `json:"quality"`
@@ -77,7 +65,7 @@ type settings struct {
 }
 
 func defaultSettings() settings {
-	return settings{NotchActivity: true, Quality: "exhigh", Appearance: "system", Volume: 0.8, Normalize: true, AppIcon: "dock-and-menubar", CacheMB: 2048, UpdateCheck: true}
+	return settings{Quality: "exhigh", Appearance: "system", Volume: 0.8, Normalize: true, AppIcon: "dock-and-menubar", CacheMB: 2048, UpdateCheck: true}
 }
 
 func settingsPath() (string, error) {

@@ -56,7 +56,7 @@ func (a *app) link(c *ui.Context, text string, color, hover ui.Color, r route) {
 }
 
 // openPage opens a page in the main window, from wherever a link to it
-// shows: over Now Playing, which closes, or the notch.
+// shows: over Now Playing, which closes.
 func (a *app) openPage(r route) {
 	a.open(r)
 	a.showMain()

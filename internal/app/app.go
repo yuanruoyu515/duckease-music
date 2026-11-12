@@ -39,12 +39,11 @@ type route struct {
 // app is the state both windows show. Everything in it is read and changed
 // on the main thread: by the views, and by goroutines through post.
 type app struct {
-	win   *mygo.Window
-	notch *notch
-	tray  *mygo.Tray // the icon in the menu bar or notification area, while it shows
-	art   *artCache
-	pl    *player.Player
-	pal   palette
+	win  *mygo.Window
+	tray *mygo.Tray // the icon in the menu bar or notification area, while it shows
+	art  *artCache
+	pl   *player.Player
+	pal  palette
 
 	route   route
 	history []route
@@ -134,7 +133,6 @@ type app struct {
 	npCoverState          coverState    // the cover of Now Playing, as it is tilted and flicked
 	wallState             wallState     // the wall of the queue's covers, as it is dragged
 	quiet                 quietState    // the quiet parts of the song playing, for its hot comments
-	sig                   playerSig
 	quitting              bool
 
 	settings    settings
@@ -165,8 +163,8 @@ func (a *app) redraw() {
 	if a.win != nil {
 		a.win.Invalidate()
 	}
-	if a.notch != nil && a.notch.win != nil {
-		a.notch.win.Invalidate()
+	if a.settingsWin != nil {
+		a.settingsWin.Invalidate()
 	}
 }
 
@@ -245,11 +243,6 @@ func Run() error {
 		})
 		a.setMenu()
 		a.boot()
-		// The notch player is macOS's, over its menu bar: elsewhere it would
-		// hang at the top of the screen as a black box.
-		if runtime.GOOS == "darwin" {
-			a.notch = newNotch(a)
-		}
 		// From the menu bar alone, the Dock icon shows while the window
 		// does.
 		a.syncDock()

@@ -45,9 +45,6 @@ func (a *app) changed() {
 	a.settings.save()
 	a.settings.applyAppearance()
 	netease.Fallback.Store(a.settings.Fallback)
-	if a.notch != nil {
-		a.notch.setEnabled(a.settings.Notch)
-	}
 	a.redraw()
 }
 
@@ -98,27 +95,6 @@ func (a *app) settingsView(c *ui.Context) {
 						}
 						a.changed()
 						a.changeAppIcon()
-					}
-				})
-			})
-		}
-
-		// Only on macOS, the one with a notch player.
-		if a.notch != nil {
-			group("刘海播放器", func() {
-				row("显示刘海播放器", "在屏幕顶部的刘海处显示迷你播放器，鼠标悬停即可展开", func() {
-					if ui.Switch(c.Key("notch"), &s.Notch).Label("显示刘海播放器").Changed() {
-						a.changed()
-					}
-				})
-				row("播放时显示实时活动", "在刘海两侧显示封面与音频波形，可能遮挡刘海旁的菜单栏图标", func() {
-					if ui.Switch(c.Key("activity"), &s.NotchActivity).Label("播放时显示实时活动").Disabled(!s.Notch).Changed() {
-						a.changed()
-					}
-				})
-				row("在无刘海的屏幕上常驻显示", "关闭时，将鼠标移至屏幕顶部中央即可唤出，不会遮挡菜单栏", func() {
-					if ui.Switch(c.Key("virtual"), &s.NotchVirtual).Label("在无刘海的屏幕上常驻显示").Disabled(!s.Notch).Changed() {
-						a.changed()
 					}
 				})
 			})

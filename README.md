@@ -75,7 +75,7 @@ One snapshot, not a fixed memory budget or a controlled benchmark. Usage changes
 | Queue, shuffle, repeat, likes | Daily recommendations, playlists, charts | Light, dark, or system appearance |
 | Standard through Hi-Res quality, when available | Songs, artists, albums, users, podcasts | Local audio cache and playback resume |
 | Synced lyrics and translations | Personal FM and Heartbeat mode | Cover gestures and keyboard controls |
-| Podcast playback and subscriptions | Artist, album, and user pages | Optional notch player on macOS |
+| Podcast playback and subscriptions | Artist, album, and user pages | Customizable sidebar |
 
 Availability comes from the platform. Selecting a quality does not create an entitlement to it. This project does not add subscription unlocking or a promise to bypass access restrictions. The one exception is opt-in and off by default: the **Fallback source** setting asks the third-party [GD音乐台](https://music.gdstudio.xyz) API for songs that fail to load or show greyed out. That service is free, run by someone else, for personal study only, and may stop at any time.
 

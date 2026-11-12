@@ -71,7 +71,6 @@ func (a *app) view(c *ui.Context) {
 		c.Toast(a.toast)
 		a.toast = ""
 	}
-	a.syncWindows()
 }
 
 func (a *app) shortcuts(c *ui.Context) {

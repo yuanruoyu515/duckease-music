@@ -56,12 +56,12 @@ UI 框架的规则（Context、Element 生命周期、线程）见 `.agents/skil
 
 ## 姊妹项目 MyGo Music
 
-[egoist/mygo-music](https://github.com/egoist/mygo-music)（AGPL-3.0）是原作者 2026-11-04 下线云音乐的同一天开的新项目：把云音乐的代码拿掉网易云部分，改成靠插件接音源的通用播放器。它不是云音乐的前身，是同一套代码的后续。播放器（`internal/player`）、歌词（`internal/lyrics`）、界面和刘海播放器都是同源的，它每修一个 bug，我们这边多半也有。
+[egoist/mygo-music](https://github.com/egoist/mygo-music)（AGPL-3.0）是原作者 2026-11-04 下线云音乐的同一天开的新项目：把云音乐的代码拿掉网易云部分，改成靠插件接音源的通用播放器。它不是云音乐的前身，是同一套代码的后续。播放器（`internal/player`）、歌词（`internal/lyrics`）和界面都是同源的（刘海播放器本分支已删），它每修一个 bug，我们这边多半也有。
 
 - 两边没有共同的 git 历史（它的第一个提交是一次性导入），不能直接 merge 或 cherry-pick，只能对照着手工移植。
 - 已加成远端 `mygo-music`，只拉不推：`git fetch mygo-music`，然后 `git log mygo-music/main -- internal/player internal/lyrics` 看它最近改了什么，`git diff HEAD mygo-music/main -- internal/player/<文件>` 对照具体差异。
-- 值得移植的：播放、解码、拖动进度、歌词、刘海和界面上的 bug 修复，以及 MyGo 框架的升级（它升级时改了哪些地方，正好是我们升级的参照）。
-- 不要搬的：插件系统、多音源、本地音乐文件夹、播客字幕（我们已删）、自动更新（我们已删）、它的图标和名字。
+- 值得移植的：播放、解码、拖动进度、歌词和界面上的 bug 修复，以及 MyGo 框架的升级（它升级时改了哪些地方，正好是我们升级的参照）。
+- 不要搬的：插件系统、多音源、本地音乐文件夹、播客字幕（我们已删）、自动更新（我们已删）、刘海播放器（我们已删）、它的图标和名字。
 - 它更新很快（头 4 天 115 个提交）。建议每次准备发版前看一眼，或者遇到播放类 bug 时先去它那边找找有没有修过。
 
 ## 网易云换接口时怎么修
@@ -143,7 +143,7 @@ LIVE=1 CGO_ENABLED=0 go test ./internal/netease/ -run Live -count=1 -v
 1. **网易云接口。** eapi 的客户端身份（`eapi.go` 里的 `appver` 3.1.17.204416、`versioncode` 140、`eapiKey`）被淘汰时，登录、取歌曲地址、逐字歌词会一起坏。取地址接口 `/api/song/enhance/player/url/v1` 的路径或字段（`level`、`freeTrialInfo`）改了，就会能登录但放不了歌。`privilege` 的 `st`、`pl` 改名，灰色歌的判断会全错。CDN 开始校验 Referer 或 User-Agent 时，地址拿得到但下载 403。`-460` 风控收紧时，30 秒冷却（`blockCooldown`）可能不够。最早的信号在 api-enhanced 的 issue 区和 `util/request.js`。
 2. **GD音乐台。** 停服、换域名、改返回字段（`url`、`br`、`size`）或收紧频率限制（现在是 5 分钟 50 次）。功能默认关闭，出事也只是降级成无法播放。
 3. **GitHub Release。** 更新检查读 `releases/latest`。发版时标签必须是 `v<版本>`，附 `.dmg`，不能勾预发布：预发布不会被 latest 返回，老版本就收不到提示。
-4. **macOS。** 对 ad hoc 签名、未公证 App 的拦截越来越严，这是分发上最大的风险。钥匙串政策变化可能读不出登录态。刘海播放器依赖菜单栏附近的窗口层级，系统大版本后最容易错位。Icon Composer 格式变了要重新导出图标。
+4. **macOS。** 对 ad hoc 签名、未公证 App 的拦截越来越严，这是分发上最大的风险。钥匙串政策变化可能读不出登录态。Icon Composer 格式变了要重新导出图标。
 
 ### 值得跟上的
 
