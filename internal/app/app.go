@@ -61,6 +61,7 @@ type app struct {
 	ask          confirmDialog  // whether to do something that can't be undone, asked
 	pick         trackPick      // the songs picked on a playlist's page (bulk.go)
 	manager      managerState   // the manager of the listener's playlists
+	picker       coverPicker    // the picker of a playlist's cover
 	liked        map[int64]bool // the songs the listener likes
 	toast        string         // a message to show once
 	picked       pickedUp       // the song a login picked up, waiting to play

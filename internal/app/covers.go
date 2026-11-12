@@ -25,8 +25,10 @@ import (
 // sees them.
 
 // coversDir returns where the chosen covers are kept, or "" without a
-// user data directory, as in tests.
-func coversDir() string {
+// user data directory; tests replace it.
+var coversDir = userCoversDir
+
+func userCoversDir() string {
 	dir, err := mygo.App.Path(mygo.PathUserData)
 	if err != nil {
 		return ""

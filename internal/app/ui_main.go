@@ -70,6 +70,7 @@ func (a *app) view(c *ui.Context) {
 	a.deletePlaylistDialog(c)
 	a.sidebarEditor(c)
 	a.managerView(c)
+	a.coverPickerView(c)
 	a.confirmView(c)
 	if a.toast != "" {
 		c.Toast(a.toast)

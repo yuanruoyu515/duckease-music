@@ -915,7 +915,7 @@ func (a *app) isMine(id int64) bool {
 // listener's playlist id, kept on this Mac.
 func (a *app) coverItems(m *ui.Menu, id int64) {
 	if m.Item("更换封面…").Chosen() {
-		a.chooseCover(id)
+		a.openCoverPicker(id)
 	}
 	if _, ok := a.covers[id]; ok && m.Item("恢复默认封面").Chosen() {
 		a.resetCover(id)
