@@ -16,7 +16,8 @@ import (
 func pickTestApp(t *testing.T) *app {
 	old := bulkPause
 	bulkPause = 0
-	t.Cleanup(func() { bulkPause = old })
+	playlistDetail = func(id int64) (*netease.Playlist, error) { return &netease.Playlist{ID: id}, nil }
+	t.Cleanup(func() { bulkPause, playlistDetail = old, netease.PlaylistDetail })
 	a := editTestApp()
 	pl := a.playlists[10]
 	pl.Tracks = append(pl.Tracks, netease.Track{ID: 3, Name: "晴天", Artists: []netease.Artist{{Name: "周杰伦"}}, Duration: 200000})
@@ -123,21 +124,19 @@ func TestAddPickedSongs(t *testing.T) {
 	}
 }
 
-// A chunk NetEase turns away for a song it has already goes again one
-// song at a time, so the others are added.
+// Songs the playlist has already are left out of what is added, and with
+// all of them there nothing is asked.
 func TestAddInChunksSkipsSongsThere(t *testing.T) {
 	old := bulkPause
 	bulkPause = 0
-	defer func() { bulkPause = old }()
-	var added []int64
-	addToPlaylist = func(pid int64, songs ...int64) error {
-		if slices.Contains(songs, 2) {
-			return netease.ErrInPlaylist
-		}
-		added = append(added, songs...)
-		return nil
+	playlistDetail = func(id int64) (*netease.Playlist, error) {
+		return &netease.Playlist{ID: id, Tracks: []netease.Track{{ID: 2}}}, nil
 	}
-	defer func() { addToPlaylist = netease.AddToPlaylist }()
+	var added []int64
+	addToPlaylist = func(pid int64, songs ...int64) error { added = append(added, songs...); return nil }
+	defer func() {
+		bulkPause, playlistDetail, addToPlaylist = old, netease.PlaylistDetail, netease.AddToPlaylist
+	}()
 
 	if err := addInChunks(1, []int64{1, 2, 3}); err != nil {
 		t.Fatalf("got %v, want the others added", err)
@@ -146,8 +145,8 @@ func TestAddInChunksSkipsSongsThere(t *testing.T) {
 		t.Errorf("added %v, want 1 and 3", added)
 	}
 	added = nil
-	if err := addInChunks(1, []int64{2}); !errors.Is(err, netease.ErrInPlaylist) {
-		t.Errorf("all there: got %v, want ErrInPlaylist", err)
+	if err := addInChunks(1, []int64{2}); !errors.Is(err, netease.ErrInPlaylist) || added != nil {
+		t.Errorf("all there: got %v and added %v, want ErrInPlaylist and nothing asked", err, added)
 	}
 }
 
@@ -201,15 +200,21 @@ func TestManagerCopiesSaved(t *testing.T) {
 	adds := make(chan add, 1)
 	addToPlaylist = func(pid int64, songs ...int64) error { adds <- add{pid, songs}; return nil }
 	names := make(chan string, 1)
-	createPlaylist = func(name string) (*netease.Playlist, error) { names <- name; return &netease.Playlist{ID: 30, Name: name}, nil }
+	createPlaylist = func(name string) (*netease.Playlist, error) {
+		names <- name
+		return &netease.Playlist{ID: 30, Name: name}, nil
+	}
+	a := pickTestApp(t)
 	playlistDetail = func(id int64) (*netease.Playlist, error) {
+		if id != 20 {
+			return &netease.Playlist{ID: id}, nil
+		}
 		return &netease.Playlist{ID: id, Tracks: []netease.Track{{ID: 7}, {ID: 8}}}, nil
 	}
 	defer func() {
 		addToPlaylist, createPlaylist, playlistDetail = netease.AddToPlaylist, netease.CreatePlaylist, netease.PlaylistDetail
 	}()
 
-	a := pickTestApp(t)
 	a.openManager(true)
 	a.manager.ids[20] = true
 	tt := ui.NewTester(a.view, 1200, 800)

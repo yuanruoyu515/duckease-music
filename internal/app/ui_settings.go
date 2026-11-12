@@ -306,7 +306,7 @@ func (a *app) fallbackQuota(c *ui.Context, p palette) {
 			ui.Text(c, "5 分钟限额").FontSize(12).TextColor(p.muted).Grow(1)
 			ui.Textf(c, "%d / %d 次", used, limit).FontSize(12).FontFeatures("tnum").TextColor(p.muted)
 		})
-		track := p.hover.Over(p.bg)
+		track := p.press.Over(p.bg)
 		ui.Box(c).Height(6).Label(fmt.Sprintf("备用音源 5 分钟内已用 %d 次，共 %d 次", used, limit)).
 			Draw(func(pt *ui.Painter, r ui.Rect) {
 				pt.Fill(r, track, r.H/2)

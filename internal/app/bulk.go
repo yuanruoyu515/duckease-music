@@ -114,52 +114,49 @@ func (a *app) addSongs(pid int64, name string, songs []int64, then func(err erro
 	}()
 }
 
-// addInChunks adds songs to playlist pid, bulkChunk at a time: a song
-// that is in it already fails only its own chunk, which then goes one by
-// one.
+// addInChunks adds songs to playlist pid, bulkChunk at a time, leaving
+// out those it has already: NetEase turns a whole request away for one
+// song it has. It returns ErrInPlaylist when it has them all.
 func addInChunks(pid int64, songs []int64) error {
-	var last error
+	if there, err := playlistDetail(pid); err == nil {
+		has := map[int64]bool{}
+		for _, t := range there.TrackIDs {
+			has[t.ID] = true
+		}
+		for _, t := range there.Tracks {
+			has[t.ID] = true
+		}
+		songs = slices.DeleteFunc(slices.Clone(songs), func(id int64) bool { return has[id] })
+		if len(songs) == 0 {
+			return netease.ErrInPlaylist
+		}
+		time.Sleep(bulkPause)
+	}
 	added := 0
 	for i := 0; i < len(songs); i += bulkChunk {
 		if i > 0 {
 			time.Sleep(bulkPause)
 		}
 		chunk := songs[i:min(i+bulkChunk, len(songs))]
-		err := addToPlaylist(pid, chunk...)
-		if errors.Is(err, netease.ErrInPlaylist) && len(chunk) > 1 {
-			// NetEase turns the whole chunk away for one song it has.
-			err = nil
-			n := 0
-			for _, id := range chunk {
-				time.Sleep(bulkPause / 4)
-				switch e := addToPlaylist(pid, id); {
-				case e == nil:
-					n++
-				case !errors.Is(e, netease.ErrInPlaylist):
-					err = e
-				}
-			}
-			if err == nil && n == 0 {
-				err = netease.ErrInPlaylist
-			}
-			added += n
-		} else if err == nil {
+		switch err := addToPlaylist(pid, chunk...); {
+		case err == nil:
 			added += len(chunk)
-		}
-		if err != nil && !errors.Is(err, netease.ErrInPlaylist) {
+		case errors.Is(err, netease.ErrInPlaylist):
+			// Added since it was looked at: the rest go on.
+		default:
 			return err
 		}
-		last = err
 	}
-	if added > 0 {
-		return nil
+	if added == 0 {
+		return netease.ErrInPlaylist
 	}
-	return last
+	return nil
 }
 
 // removeSongs takes songs out of the listener's playlist pid, at once in
 // the app and then with NetEase, which may refuse: they come back then.
-func (a *app) removeSongs(pid int64, songs []int64) {
+// Quiet, it says nothing once done, as when moving them.
+func (a *app) removeSongs(pid int64, songs []int64, quiet bool) {
 	pl := a.playlists[pid]
 	var before []netease.Track
 	if pl != nil {
@@ -183,7 +180,7 @@ func (a *app) removeSongs(pid int64, songs []int64) {
 				a.toast = "移除失败，请稍后再试"
 				return
 			}
-			if len(songs) > 1 {
+			if !quiet {
 				a.toast = fmt.Sprintf("已移除 %d 首歌曲", len(songs))
 			}
 			if a.profile != nil {
@@ -197,7 +194,7 @@ func (a *app) removeSongs(pid int64, songs []int64) {
 func (a *app) moveSongs(from, to int64, name string, songs []int64) {
 	a.addSongs(to, name, songs, func(err error) {
 		if err == nil || errors.Is(err, netease.ErrInPlaylist) {
-			a.removeSongs(from, songs)
+			a.removeSongs(from, songs, true)
 			a.toast = fmt.Sprintf("已将 %d 首歌曲移到“%s”", len(songs), name)
 		}
 	})
@@ -300,7 +297,7 @@ func (a *app) pickBar(c *ui.Context) {
 						body:   fmt.Sprintf("从“%s”中移除所选的 %d 首歌曲？", pl.Name, len(ids)),
 						action: "移除",
 						do: func() {
-							a.removeSongs(pid, ids)
+							a.removeSongs(pid, ids, false)
 							a.stopPicking()
 						}}
 				}

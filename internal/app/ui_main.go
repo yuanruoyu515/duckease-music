@@ -112,6 +112,9 @@ func (a *app) open(r route) {
 
 // show shows the page of r.
 func (a *app) show(r route) {
+	if r.page != pagePlaylist || r.id != a.pick.pid {
+		a.stopPicking()
+	}
 	a.route = r
 	if r.page == pageSearch {
 		a.query, a.searched = r.query, r

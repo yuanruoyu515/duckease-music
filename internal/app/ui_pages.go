@@ -527,10 +527,15 @@ func (a *app) trackRowsOf(c *ui.Context, all []netease.Track, shown []int, cover
 		pid = a.route.id
 	}
 	picking := pid != 0 && a.picking(pid)
+	top, bottom := a.insets(c)
+	foot := bottom + 32
+	if picking {
+		// Room for the bar of the songs picked, over the last rows.
+		foot += 64
+	}
 	w, _ := c.Size()
 	// An album's page has no column of the album its songs are on.
 	wide := w-sidebarWidth > 820 && a.route.page != pageAlbum
-	top, bottom := a.insets(c)
 	// Rows out of view are not built, their marks with them: a list
 	// scrolled away from its start or end has content under the bars.
 	a.underTop, a.underBottom = true, true
@@ -637,7 +642,7 @@ func (a *app) trackRowsOf(c *ui.Context, all []netease.Track, shown []int, cover
 		case tr.Playable():
 			a.pl.PlayQueue(all, i)
 		}
-	}).Grow(1).Padding(top+pageGap, pagePad-12, bottom+32, pagePad-12).ScrollbarInsets(top, 0, bottom, 0)
+	}).Grow(1).Padding(top+pageGap, pagePad-12, foot, pagePad-12).ScrollbarInsets(top, 0, bottom, 0)
 }
 
 // nowPlayingBars dance in the row of the track playing.
