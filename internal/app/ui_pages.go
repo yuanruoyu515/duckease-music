@@ -389,34 +389,37 @@ func (a *app) playlistNoMatch(c *ui.Context, q string) {
 func (a *app) playlistHeader(c *ui.Context, pl *netease.Playlist) {
 	p := a.pal
 	ui.Row(c).Gap(28).AlignItems(ui.End).Padding(0, 0, 26, 0).Children(func() {
-		if a.isMine(pl.ID) {
-			// The listener's own: a click changes its cover.
-			b := ui.ButtonBase(c.Key("cover")).Size(212, 212).Radius(14).Shadow(0, 18, 40, -10, p.cardShade).
-				FocusRing(false).Label("更换封面")
-			hover := float32(0)
-			if b.Hovered() {
-				hover = 1
-			}
-			hover = b.AnimateTo("hover", hover, ui.Animation{Duration: 140 * time.Millisecond})
-			b.Children(func() {
-				a.coverFill(c, a.plCover(pl), 600, 14)
-				if hover > 0 {
-					ui.Column(c).Absolute().Top(0).Left(0).Right(0).Bottom(0).Radius(14).Center().Gap(6).
-						Background(ui.RGBA(0, 0, 0, 0.45)).Opacity(hover).PassThrough().Children(func() {
-						ui.Icon(c, iconImage).Size(26, 26).TextColor(white)
-						ui.Text(c, "更换封面").FontSize(13).FontWeight(600).TextColor(white)
-					})
+		ui.Box(c.Key("cover-box")).Size(212, 212).Radius(14).Shadow(0, 18, 40, -10, p.cardShade).Children(func() {
+			if a.isMine(pl.ID) {
+				// The listener's own: a click changes its cover.
+				b := ui.ButtonBase(c.Key("cover")).Absolute().Top(0).Left(0).Right(0).Bottom(0).Radius(14).
+					FocusRing(false).Label("更换封面")
+				hover := float32(0)
+				if b.Hovered() {
+					hover = 1
 				}
-			})
-			b.ContextMenu(func(m *ui.Menu) { a.coverItems(m, pl.ID) })
-			if b.Clicked() {
-				a.chooseCover(pl.ID)
-			}
-		} else {
-			ui.Box(c).Size(212, 212).Radius(14).Shadow(0, 18, 40, -10, p.cardShade).Children(func() {
+				hover = b.AnimateTo("hover", hover, ui.Animation{Duration: 140 * time.Millisecond})
+				b.Children(func() {
+					a.coverFill(c, a.plCover(pl), 600, 14)
+					if hover > 0 {
+						ui.Column(c).Absolute().Top(0).Left(0).Right(0).Bottom(0).Radius(14).Center().Gap(6).
+							Background(ui.RGBA(0, 0, 0, 0.45)).Opacity(hover).PassThrough().Children(func() {
+							ui.Icon(c, iconImage).Size(26, 26).TextColor(white)
+							ui.Text(c, "更换封面").FontSize(13).FontWeight(600).TextColor(white)
+						})
+					}
+				})
+				b.ContextMenu(func(m *ui.Menu) { a.coverItems(m, pl.ID) })
+				if b.Clicked() {
+					a.chooseCover(pl.ID)
+				}
+			} else {
 				a.coverFill(c, a.plCover(pl), 600, 14)
-			})
-		}
+			}
+			if a.profile != nil && pl.UpdateFreq == "" {
+				a.coverMoreButton(c).Menu(a.playlistMenu(pl))
+			}
+		})
 		ui.Column(c).Grow(1).Shrink(1).MinWidth(0).Gap(8).Children(func() {
 			kind := "歌单"
 			if pl.UpdateFreq != "" {
@@ -459,32 +462,6 @@ func (a *app) playlistHeader(c *ui.Context, pl *netease.Playlist) {
 						a.toggleSaved(*pl)
 					}
 				}
-				if a.profile != nil && pl.UpdateFreq == "" {
-					more := iconButton(c.Key("more"), iconMore, 18, p.muted, "更多")
-					more.Menu(func(m *ui.Menu) {
-						mine := a.editable(pl.ID)
-						if mine != nil && m.Item("重命名…").Chosen() {
-							a.startRename(mine)
-						}
-						if a.isMine(pl.ID) {
-							a.coverItems(m, pl.ID)
-						} else if m.Item("复制到我的歌单").Chosen() {
-							a.copyToMine(*pl)
-						}
-						if m.Item("批量选择歌曲").Chosen() {
-							a.startPicking(pl.ID)
-						}
-						if m.Item("管理我的歌单…").Chosen() {
-							a.openManager(!a.isMine(pl.ID) && a.isSaved(pl))
-						}
-						if mine != nil {
-							m.Separator()
-							if m.Item("删除歌单…").Chosen() {
-								a.confirmDelete(mine)
-							}
-						}
-					})
-				}
 				switch {
 				case pl.SpecialType != 5:
 				case a.pl.Radio() == heartRadio:
@@ -503,6 +480,52 @@ func (a *app) playlistHeader(c *ui.Context, pl *netease.Playlist) {
 			})
 		})
 	})
+}
+
+// coverMoreButton is the round button over the bottom right corner of a
+// playlist's cover that opens its menu: see-through over the cover, and
+// clearer under the pointer.
+func (a *app) coverMoreButton(c *ui.Context) ui.Element {
+	b := ui.ButtonBase(c.Key("more")).Absolute().Bottom(10).Right(10).Size(32, 32).Radius(999).Center().
+		Label("更多").FocusRing(false).TextColor(white)
+	shade := float32(0)
+	if b.Hovered() || b.Pressed() {
+		shade = 1
+	}
+	shade = b.AnimateTo("shade", shade, ui.Animation{Duration: 140 * time.Millisecond})
+	b.Background(ui.RGBA(0, 0, 0, 0.32+0.33*shade)).Border(0.5, white.Alpha(0.18+0.22*shade))
+	b.Children(func() {
+		ui.Icon(c, iconMore).Size(16, 16).Opacity(0.8 + 0.2*shade)
+	})
+	return b
+}
+
+// playlistMenu is the menu of a playlist's page: what the listener may do
+// with it, theirs or someone else's.
+func (a *app) playlistMenu(pl *netease.Playlist) func(m *ui.Menu) {
+	return func(m *ui.Menu) {
+		mine := a.editable(pl.ID)
+		if mine != nil && m.Item("重命名…").Chosen() {
+			a.startRename(mine)
+		}
+		if a.isMine(pl.ID) {
+			a.coverItems(m, pl.ID)
+		} else if m.Item("复制到我的歌单").Chosen() {
+			a.copyToMine(*pl)
+		}
+		if m.Item("批量选择歌曲").Chosen() {
+			a.startPicking(pl.ID)
+		}
+		if m.Item("管理我的歌单…").Chosen() {
+			a.openManager(!a.isMine(pl.ID) && a.isSaved(pl))
+		}
+		if mine != nil {
+			m.Separator()
+			if m.Item("删除歌单…").Chosen() {
+				a.confirmDelete(mine)
+			}
+		}
+	}
 }
 
 // trackRows lists tracks under a header, which scrolls with them; a click
