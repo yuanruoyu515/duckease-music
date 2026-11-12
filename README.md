@@ -87,13 +87,13 @@ Availability comes from the platform. Selecting a quality does not create an ent
 - Added bounded playback retries and diagnostic logging. When the platform returns risk-control code `-460`, the player stops and cools down instead of skipping through the queue.
 - Removed the inherited website, its music demo, and the original author's release/signing workflow from this publication.
 - Added playlist sorting, Feeling lucky, and playlist search; an optional fallback source; and a switch for comments.
-- Unreleased: pick songs on a playlist page to add, move, or remove them together; a playlist manager for deleting, unsaving, copying, or merging several playlists; local cover images for your own playlists; a customizable sidebar; a badge for songs from the fallback source and its five-minute quota in Settings; manual backup of the app's own settings to iCloud Drive. The notch player is gone.
+- 0.1.25-duckease.4: pick songs on a playlist page to add, move, or remove them together; a playlist manager for deleting, unsaving, copying, or merging several playlists; local cover images for your own playlists; a customizable sidebar; a badge for songs from the fallback source and its five-minute quota in Settings; manual backup of the app's own settings to iCloud Drive. The notch player is gone.
 
 See [provenance and modification dates](NOTICE.md), [changes](CHANGELOG.md), and [maintenance notes](MAINTENANCE.md). This repository starts from a clean publication snapshot; older local development history is not uploaded with it.
 
 ## Install on macOS
 
-[**Download the macOS DMG**](https://github.com/yuanruoyu515/duckease-music/releases/download/v0.1.25-duckease.3/duckease-music-0.1.25-duckease.3.dmg) · [Release notes and checksums](https://github.com/yuanruoyu515/duckease-music/releases/tag/v0.1.25-duckease.3)
+[**Download the macOS DMG**](https://github.com/yuanruoyu515/duckease-music/releases/download/v0.1.25-duckease.4/duckease-music-0.1.25-duckease.4.dmg) · [Release notes and checksums](https://github.com/yuanruoyu515/duckease-music/releases/tag/v0.1.25-duckease.4)
 
 1. Download and open the DMG.
 2. Drag **DuckEase Music** onto **Applications** beside it.

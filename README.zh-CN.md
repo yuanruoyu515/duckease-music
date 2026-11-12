@@ -49,6 +49,15 @@
   </tr>
 </table>
 
+## 0.1.25-duckease.4 新功能
+
+- **批量管理歌单**：歌单页点「批量选择」，勾选的歌可以加到、移到别的歌单，或从当前歌单移除。侧边栏「我的歌单」「收藏的歌单」旁的按钮打开管理窗口，可以批量删除、取消收藏、复制或合并歌单。
+- **自定义封面**：点自己歌单的封面就能换图，图片只存在本机。
+- **自定义侧边栏**：每一项都能关掉或调整顺序。
+- **备用音源提示**：播放页标出来自备用音源的歌和它的音质；设置里能看到 5 分钟限额用了多少。
+- **iCloud 备份**：在「设置 → 备份」里手动备份和恢复本机设置，不含网易云账号。
+- 刘海播放器已删除。
+
 ## 0.1.25-duckease.3 新功能
 
 <table>
@@ -59,15 +68,6 @@
 </table>
 
 另外，应用会检查本仓库的新版本并提示下载，「关于」窗口里有我的 GitHub 和 Threads 链接。
-
-## 尚未发布的新功能
-
-- **批量管理歌单**：歌单页点「批量选择」，勾选的歌可以加到、移到别的歌单，或从当前歌单移除。侧边栏「我的歌单」「收藏的歌单」旁的按钮打开管理窗口，可以批量删除、取消收藏、复制或合并歌单。
-- **自定义封面**：点自己歌单的封面就能换图，图片只存在本机。
-- **自定义侧边栏**：每一项都能关掉或调整顺序。
-- **备用音源提示**：播放页标出来自备用音源的歌和它的音质；设置里能看到 5 分钟限额用了多少。
-- **iCloud 备份**：在「设置 → 备份」里手动备份和恢复本机设置，不含网易云账号。
-- 刘海播放器已删除。
 
 ## 本机内存截图：191 MB
 
@@ -101,7 +101,7 @@ Go 原生界面，不套 WebView。下面是我自己 Mac 上的占用截图，*
 
 ## macOS 安装
 
-[**下载 macOS DMG 安装包**](https://github.com/yuanruoyu515/duckease-music/releases/download/v0.1.25-duckease.3/duckease-music-0.1.25-duckease.3.dmg) · [发布说明与校验值](https://github.com/yuanruoyu515/duckease-music/releases/tag/v0.1.25-duckease.3)
+[**下载 macOS DMG 安装包**](https://github.com/yuanruoyu515/duckease-music/releases/download/v0.1.25-duckease.4/duckease-music-0.1.25-duckease.4.dmg) · [发布说明与校验值](https://github.com/yuanruoyu515/duckease-music/releases/tag/v0.1.25-duckease.4)
 
 1. 下载并打开 DMG。
 2. 把 **DuckEase Music** 拖进旁边的 **Applications（应用程序）**。

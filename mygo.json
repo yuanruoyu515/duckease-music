@@ -2,7 +2,7 @@
   "name": "DuckEase Music",
   "identifier": "dev.egoist.cloudmusic",
   "slug": "duckease-music",
-  "version": "0.1.25-duckease.3",
+  "version": "0.1.25-duckease.4",
   "out": "build",
   "macos": {
     "icon": "icon/DuckEase.icon",
