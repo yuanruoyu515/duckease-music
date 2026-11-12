@@ -233,7 +233,7 @@ func (a *app) foundPlaylistCard(c *ui.Context, pl *netease.Playlist) {
 	if pl.Creator.Nickname != "" {
 		sub += " · " + pl.Creator.Nickname
 	}
-	if a.coverCard(c, pl.Name, pl.Cover(), pl.PlayCount, sub, func() { a.loadPlaylist(pl.ID, true) }) {
+	if a.coverCard(c, pl.Name, a.plCover(pl), pl.PlayCount, sub, func() { a.loadPlaylist(pl.ID, true) }) {
 		a.open(route{page: pagePlaylist, id: pl.ID})
 	}
 }

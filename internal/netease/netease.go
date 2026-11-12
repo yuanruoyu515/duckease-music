@@ -519,8 +519,9 @@ func Lyrics(id int64) (lrc, translation, yrc string, err error) {
 
 // Sized asks the image CDN for a picture of n×n pixels.
 func Sized(pic string, n int) string {
-	if pic == "" {
-		return ""
+	if pic == "" || strings.HasPrefix(pic, "file://") {
+		// A cover of the listener's own, on disk, is the size it is.
+		return pic
 	}
 	pic = strings.Replace(pic, "http://", "https://", 1)
 	return fmt.Sprintf("%s?param=%dy%d", pic, n, n)

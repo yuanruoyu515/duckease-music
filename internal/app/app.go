@@ -52,11 +52,15 @@ type app struct {
 	profile      *netease.Profile
 	mine, saved  []netease.Playlist // the listener's playlists: made, and saved
 	savingPl     map[int64]bool     // the playlists whose saving or its end is on its way
+	covers       map[int64]string   // the covers the listener chose for their playlists (covers.go)
 	recPlaylists []netease.Playlist // the day's playlists picked for the listener
 	login        loginState
 	accountOpen  bool           // the dropdown of the account row shows
 	naming       nameDialog     // the name of a playlist asked for
 	deleting     deleteDialog   // whether to delete a playlist, asked
+	ask          confirmDialog  // whether to do something that can't be undone, asked
+	pick         trackPick      // the songs picked on a playlist's page (bulk.go)
+	manager      managerState   // the manager of the listener's playlists
 	liked        map[int64]bool // the songs the listener likes
 	toast        string         // a message to show once
 	picked       pickedUp       // the song a login picked up, waiting to play
@@ -91,6 +95,8 @@ type app struct {
 	scrolled   route // the page trackList and pageScroll are of
 
 	mineCollapsed, savedCollapsed bool
+	customizing                   bool         // the sidebar's editor shows
+	sideList                      ui.ListState // its list of sections
 
 	query       string
 	searchBox   ui.Handle
@@ -209,6 +215,8 @@ func Run() error {
 	logToFile()
 	mygo.App.WhenReady(func() {
 		a.settings = loadSettings()
+		a.route = a.firstPage()
+		a.covers = localCovers(coversDir())
 		netease.Fallback.Store(a.settings.Fallback)
 		a.settings.applyAppearance()
 		a.npPane = a.lyricsPaneChosen()

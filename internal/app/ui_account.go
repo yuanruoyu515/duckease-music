@@ -342,6 +342,17 @@ func (a *app) myPlaylists(c *ui.Context, title string, lists []netease.Playlist,
 		if b.Clicked() {
 			*collapsed = !*collapsed
 		}
+		section := "mine"
+		if !mine {
+			section = "saved"
+		}
+		b.ContextMenu(func(m *ui.Menu) {
+			if m.Item("批量管理…").Chosen() {
+				a.openManager(!mine)
+			}
+			m.Separator()
+			a.sideMenu(section)(m)
+		})
 		b.Expanded(!*collapsed)
 		if b.Hovered() {
 			b.Background(p.hover)
@@ -354,6 +365,13 @@ func (a *app) myPlaylists(c *ui.Context, title string, lists []netease.Playlist,
 			}
 			ui.Icon(c, arrow).Size(12, 12).TextColor(p.faint)
 		})
+		manage := "管理我的歌单"
+		if !mine {
+			manage = "管理收藏的歌单"
+		}
+		if iconButton(c.Key("manage"), iconCheckSq, 13, p.faint, manage).Size(26, 26).Radius(6).Clicked() {
+			a.openManager(!mine)
+		}
 		if mine && iconButton(c.Key("new"), iconPlus, 13, p.faint, "新建歌单").Size(26, 26).Radius(6).Clicked() {
 			a.newPlaylist(nil)
 		}
@@ -372,27 +390,38 @@ func (a *app) myPlaylists(c *ui.Context, title string, lists []netease.Playlist,
 			b.Background(p.hover)
 		}
 		b.Children(func() {
-			a.cover(c, pl.Cover(), 80, 22, 5)
+			a.cover(c, a.plCover(pl), 80, 22, 5)
 			ui.Text(c, pl.Name).FontSize(13).SingleLine().Shrink(1).MinWidth(0)
 		})
-		switch {
-		case mine && pl.SpecialType != 5:
-			b.ContextMenu(func(m *ui.Menu) {
-				if m.Item("重命名…").Chosen() {
+		b.ContextMenu(func(m *ui.Menu) {
+			switch {
+			case mine:
+				if pl.SpecialType != 5 && m.Item("重命名…").Chosen() {
 					a.startRename(pl)
 				}
+				a.coverItems(m, pl.ID)
+			default:
+				if m.Item("复制到我的歌单").Chosen() {
+					a.copyToMine(*pl)
+				}
+			}
+			if m.Item("批量管理…").Chosen() {
+				a.openManager(!mine)
+			}
+			if !mine || pl.SpecialType != 5 {
 				m.Separator()
+			}
+			switch {
+			case mine && pl.SpecialType != 5:
 				if m.Item("删除歌单…").Chosen() {
 					a.confirmDelete(pl)
 				}
-			})
-		case !mine:
-			b.ContextMenu(func(m *ui.Menu) {
+			case !mine:
 				if m.Item("取消收藏").Chosen() {
 					a.toggleSaved(*pl)
 				}
-			})
-		}
+			}
+		})
 		if b.Clicked() {
 			a.open(route{page: pagePlaylist, id: pl.ID})
 		}

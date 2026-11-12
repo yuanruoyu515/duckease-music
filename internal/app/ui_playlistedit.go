@@ -2,6 +2,7 @@ package app
 
 import (
 	"errors"
+	"fmt"
 	"slices"
 	"strings"
 
@@ -30,6 +31,11 @@ type nameDialog struct {
 	rename int64          // the playlist renamed, or 0 to make one
 	add    *netease.Track // the song to add to the playlist made, if any
 	busy   bool           // NetEase is making the playlist
+	// addMany are songs to add to the playlist made, as picked.
+	addMany []int64
+	// into fills the playlist made with the songs of those picked in the
+	// manager; move then deletes them.
+	into, move bool
 }
 
 // deleteDialog asks whether to delete one of the listener's playlists.
@@ -191,8 +197,17 @@ func (a *app) submitName() {
 		}()
 		return
 	}
+	if d.into {
+		d.open = false
+		if d.move {
+			a.askMoveNew(name)
+		} else {
+			a.copyInto(0, name, false)
+		}
+		return
+	}
 	d.busy = true
-	add := d.add
+	add, many := d.add, d.addMany
 	go func() {
 		pl, err := createPlaylist(name)
 		a.post(func() {
@@ -202,14 +217,14 @@ func (a *app) submitName() {
 				return
 			}
 			a.naming.open = false
-			// Under the liked songs, as NetEase lists the newest.
-			at := 0
-			if len(a.mine) > 0 && a.mine[0].SpecialType == 5 {
-				at = 1
-			}
-			a.mine = slices.Insert(a.mine, at, *pl)
+			a.addMine(*pl)
 			pl.Tracks = nil
 			a.playlists[pl.ID] = pl
+			if len(many) > 0 {
+				a.stopPicking()
+				a.addSongs(pl.ID, pl.Name, many, nil)
+				return
+			}
 			a.open(route{page: pagePlaylist, id: pl.ID})
 			if add != nil {
 				a.addTo(pl.ID, add)
@@ -236,16 +251,7 @@ func (a *app) deleteChosen() {
 	pl := a.mine[i]
 	a.mine = slices.Delete(slices.Clone(a.mine), i, i+1)
 	// Leave no way back to its page, and leave it for the page before.
-	gone := func(r route) bool { return r.page == pagePlaylist && r.id == id }
-	a.history = slices.DeleteFunc(a.history, gone)
-	a.forward = slices.DeleteFunc(a.forward, gone)
-	if gone(a.route) {
-		r := route{page: pageHome}
-		if n := len(a.history); n > 0 {
-			r, a.history = a.history[n-1], a.history[:n-1]
-		}
-		a.show(r)
-	}
+	a.leavePlaylists([]int64{id})
 	go func() {
 		err := deletePlaylist(id)
 		a.post(func() {
@@ -255,6 +261,7 @@ func (a *app) deleteChosen() {
 				return
 			}
 			delete(a.playlists, id)
+			a.resetCover(id)
 			a.toast = "已删除歌单"
 		})
 	}()
@@ -361,8 +368,13 @@ func (a *app) playlistNameDialog(c *ui.Context) {
 			Background(p.bg).Border(1, p.hairline).Shadow(0, 24, 60, -12, ui.RGBA(0, 0, 0, 0.4)).
 			Transition(ui.ElementTransition{Animation: &ui.Snappy, Enter: &ui.Motion{Scale: 0.94}, Exit: &ui.Motion{Scale: 0.96}})
 		title, action := "新建歌单", "创建"
-		if d.rename != 0 {
+		switch {
+		case d.rename != 0:
 			title, action = "重命名歌单", "保存"
+		case d.into && d.move:
+			action = "下一步"
+		case len(d.addMany) > 0:
+			title = fmt.Sprintf("新建歌单并添加 %d 首歌曲", len(d.addMany))
 		}
 		if d.busy {
 			action = "正在创建…"

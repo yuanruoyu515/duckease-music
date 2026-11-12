@@ -127,7 +127,7 @@ func (a *app) chartsPage(c *ui.Context) {
 // playlistCard is a square cover with the playlist's name below: it lifts
 // under the pointer, where a play button shows on it.
 func (a *app) playlistCard(c *ui.Context, pl *netease.Playlist) {
-	if a.coverCard(c, pl.Name, pl.Cover(), pl.PlayCount, pl.UpdateFreq, func() { a.loadPlaylist(pl.ID, true) }) {
+	if a.coverCard(c, pl.Name, a.plCover(pl), pl.PlayCount, pl.UpdateFreq, func() { a.loadPlaylist(pl.ID, true) }) {
 		a.open(route{page: pagePlaylist, id: pl.ID})
 	}
 }
@@ -254,12 +254,24 @@ func (a *app) playlistPage(c *ui.Context) {
 	if f.id != id {
 		*f = plFilter{id: id}
 	}
+	p := a.pal
 	tracks := f.tracks(pl)
 	shown := f.match(tracks)
 	header := func(c *ui.Context) {
 		a.playlistHeader(c, pl)
 		// What orders and searches the songs, above them.
 		ui.Row(c).Gap(10).AlignItems(ui.Center).Padding(0, 12, 14, 12).Children(func() {
+			label := "批量选择"
+			if a.picking(id) {
+				label = "完成选择"
+			}
+			if pillButton(c.Key("pick"), iconCheckSq, label, p.hover.Over(p.bg), p.text).Clicked() {
+				if a.picking(id) {
+					a.stopPicking()
+				} else {
+					a.startPicking(id)
+				}
+			}
 			a.playlistSort(c)
 			ui.Box(c).Grow(1)
 			a.playlistSearch(c)
@@ -377,9 +389,34 @@ func (a *app) playlistNoMatch(c *ui.Context, q string) {
 func (a *app) playlistHeader(c *ui.Context, pl *netease.Playlist) {
 	p := a.pal
 	ui.Row(c).Gap(28).AlignItems(ui.End).Padding(0, 0, 26, 0).Children(func() {
-		ui.Box(c).Size(212, 212).Radius(14).Shadow(0, 18, 40, -10, p.cardShade).Children(func() {
-			a.coverFill(c, pl.Cover(), 600, 14)
-		})
+		if a.isMine(pl.ID) {
+			// The listener's own: a click changes its cover.
+			b := ui.ButtonBase(c.Key("cover")).Size(212, 212).Radius(14).Shadow(0, 18, 40, -10, p.cardShade).
+				FocusRing(false).Label("更换封面")
+			hover := float32(0)
+			if b.Hovered() {
+				hover = 1
+			}
+			hover = b.AnimateTo("hover", hover, ui.Animation{Duration: 140 * time.Millisecond})
+			b.Children(func() {
+				a.coverFill(c, a.plCover(pl), 600, 14)
+				if hover > 0 {
+					ui.Column(c).Absolute().Top(0).Left(0).Right(0).Bottom(0).Radius(14).Center().Gap(6).
+						Background(ui.RGBA(0, 0, 0, 0.45)).Opacity(hover).PassThrough().Children(func() {
+						ui.Icon(c, iconImage).Size(26, 26).TextColor(white)
+						ui.Text(c, "更换封面").FontSize(13).FontWeight(600).TextColor(white)
+					})
+				}
+			})
+			b.ContextMenu(func(m *ui.Menu) { a.coverItems(m, pl.ID) })
+			if b.Clicked() {
+				a.chooseCover(pl.ID)
+			}
+		} else {
+			ui.Box(c).Size(212, 212).Radius(14).Shadow(0, 18, 40, -10, p.cardShade).Children(func() {
+				a.coverFill(c, a.plCover(pl), 600, 14)
+			})
+		}
 		ui.Column(c).Grow(1).Shrink(1).MinWidth(0).Gap(8).Children(func() {
 			kind := "歌单"
 			if pl.UpdateFreq != "" {
@@ -422,15 +459,29 @@ func (a *app) playlistHeader(c *ui.Context, pl *netease.Playlist) {
 						a.toggleSaved(*pl)
 					}
 				}
-				if mine := a.editable(pl.ID); mine != nil {
+				if a.profile != nil && pl.UpdateFreq == "" {
 					more := iconButton(c.Key("more"), iconMore, 18, p.muted, "更多")
 					more.Menu(func(m *ui.Menu) {
-						if m.Item("重命名…").Chosen() {
+						mine := a.editable(pl.ID)
+						if mine != nil && m.Item("重命名…").Chosen() {
 							a.startRename(mine)
 						}
-						m.Separator()
-						if m.Item("删除歌单…").Chosen() {
-							a.confirmDelete(mine)
+						if a.isMine(pl.ID) {
+							a.coverItems(m, pl.ID)
+						} else if m.Item("复制到我的歌单").Chosen() {
+							a.copyToMine(*pl)
+						}
+						if m.Item("批量选择歌曲").Chosen() {
+							a.startPicking(pl.ID)
+						}
+						if m.Item("管理我的歌单…").Chosen() {
+							a.openManager(!a.isMine(pl.ID) && a.isSaved(pl))
+						}
+						if mine != nil {
+							m.Separator()
+							if m.Item("删除歌单…").Chosen() {
+								a.confirmDelete(mine)
+							}
 						}
 					})
 				}
@@ -475,6 +526,7 @@ func (a *app) trackRowsOf(c *ui.Context, all []netease.Track, shown []int, cover
 	if a.route.page == pagePlaylist {
 		pid = a.route.id
 	}
+	picking := pid != 0 && a.picking(pid)
 	w, _ := c.Size()
 	// An album's page has no column of the album its songs are on.
 	wide := w-sidebarWidth > 820 && a.route.page != pageAlbum
@@ -507,8 +559,14 @@ func (a *app) trackRowsOf(c *ui.Context, all []netease.Track, shown []int, cover
 		row := ui.ButtonBase(c.Key(tr.ID)).Height(54).PaddingX(12).Gap(14).Radius(10).AlignItems(ui.Center).FocusRing(false).Label(tr.Name).
 			ContextMenu(a.songItems(tr, pid))
 		hovered := row.Hovered()
+		on := picking && a.pick.ids[tr.ID]
+		if picking {
+			row.Role(ui.RoleCheckBox).Checked(on)
+		}
 		bg := ui.Transparent
 		switch {
+		case on:
+			bg = p.accent.Alpha(0.12)
 		case playing:
 			bg = p.accent.Alpha(0.09)
 		case hovered:
@@ -521,6 +579,8 @@ func (a *app) trackRowsOf(c *ui.Context, all []netease.Track, shown []int, cover
 		row.Children(func() {
 			ui.Box(c).Width(26).Center().Children(func() {
 				switch {
+				case picking:
+					a.pickMark(c, on)
 				case playing:
 					a.nowPlayingBars(c)
 				case hovered && tr.Playable():
@@ -570,7 +630,11 @@ func (a *app) trackRowsOf(c *ui.Context, all []netease.Track, shown []int, cover
 			})
 			ui.Text(c, clock(tr.Length())).FontSize(12.5).FontFeatures("tnum").TextColor(p.faint).Width(44).TextAlign(ui.End)
 		})
-		if row.Clicked() && tr.Playable() {
+		switch {
+		case !row.Clicked():
+		case picking:
+			a.pickClick(listedIDs(all, shown), tr.ID, row.ClickModifiers()&ui.Shift != 0)
+		case tr.Playable():
 			a.pl.PlayQueue(all, i)
 		}
 	}).Grow(1).Padding(top+pageGap, pagePad-12, bottom+32, pagePad-12).ScrollbarInsets(top, 0, bottom, 0)

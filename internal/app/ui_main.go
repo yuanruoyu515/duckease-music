@@ -56,6 +56,7 @@ func (a *app) view(c *ui.Context) {
 			// keeps what the page and its bars hold, their edges' fades.
 			ui.Box(c.Key("main")).Grow(1).Background(p.bg).BorderWidth(0, 0, 0, 1).BorderColor(p.hairline).Children(func() {
 				a.content(c)
+				a.pickBar(c)
 				// The bars float over the page, which scrolls under them:
 				// positioned, they paint over it.
 				a.pageTop(c)
@@ -67,6 +68,9 @@ func (a *app) view(c *ui.Context) {
 	a.loginDialog(c)
 	a.playlistNameDialog(c)
 	a.deletePlaylistDialog(c)
+	a.sidebarEditor(c)
+	a.managerView(c)
+	a.confirmView(c)
 	if a.toast != "" {
 		c.Toast(a.toast)
 		a.toast = ""
@@ -179,20 +183,11 @@ func (a *app) sidebar(c *ui.Context) {
 		a.searchField(c)
 
 		ui.Scroll(c.Key("nav")).TrackScroll(&a.navScroll).Grow(1).Margin(0, -6).Padding(0, 6).Gap(4).Children(func() {
-			a.navItem(c, iconHome, "为你推荐", route{page: pageHome})
-			a.navItem(c, iconDaily, "每日推荐", route{page: pageDaily})
-			a.navItem(c, iconRadio, "私人 FM", route{page: pageFM})
-			a.navItem(c, iconCharts, "排行榜", route{page: pageCharts})
-			a.navItem(c, iconPodcast, "播客", route{page: pagePodcasts})
-			if a.searched.query != "" {
-				a.navItem(c, iconSearch, "搜索结果", a.searched)
-			}
-			a.myPlaylists(c, "我的歌单", a.mine, true, &a.mineCollapsed)
-			a.myPlaylists(c, "收藏的歌单", a.saved, false, &a.savedCollapsed)
+			a.sidebarSections(c)
 		})
 
 		// What plays, as a card at the foot of the sidebar, over who listens.
-		if tr := a.pl.Current(); tr != nil {
+		if tr := a.pl.Current(); tr != nil && !a.settings.HideSideNowPlaying {
 			a.sidebarNowPlaying(c, tr)
 		}
 		a.accountRow(c)
@@ -203,6 +198,11 @@ func (a *app) navItem(c *ui.Context, icon *ui.SVG, label string, r route) {
 	p := a.pal
 	selected := a.route.page == r.page && !a.nowPlaying
 	b := ui.ButtonBase(c.Key(label)).Height(34).PaddingX(10).Gap(10).Radius(8).AlignItems(ui.Center).Justify(ui.Start).FocusRing(false)
+	for _, s := range sideSections {
+		if s.label == label {
+			b.ContextMenu(a.sideMenu(s.id))
+		}
+	}
 	bg := ui.Transparent
 	switch {
 	case selected:

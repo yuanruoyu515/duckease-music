@@ -58,6 +58,12 @@ type settings struct {
 	// chose not to hear of again.
 	UpdateCheck    bool   `json:"updateCheck"`
 	SkippedVersion string `json:"skippedVersion,omitempty"`
+	// Sidebar is the order of the sidebar's sections, and those hidden
+	// (sideItem); nil for the first order, all shown.
+	Sidebar []sideItem `json:"sidebar,omitempty"`
+	// HideSideNowPlaying hides the card of the song playing at the foot of
+	// the sidebar.
+	HideSideNowPlaying bool `json:"hideSideNowPlaying,omitempty"`
 	// SearchHistory keeps submitted keywords, most recent first.
 	SearchHistory []string `json:"searchHistory,omitempty"`
 
