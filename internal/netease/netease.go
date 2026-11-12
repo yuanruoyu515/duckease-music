@@ -425,6 +425,9 @@ type Stream struct {
 	// unknown.
 	Gain float64 `json:"gain"`
 	Peak float64 `json:"peak"`
+	// Fallback says the stream came from the fallback source, not NetEase:
+	// kept with the song in the cache, so it still says so played again.
+	Fallback bool `json:"fallback,omitempty"`
 }
 
 // Levels are the stream levels, from the lowest.

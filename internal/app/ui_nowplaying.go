@@ -182,16 +182,20 @@ func (a *app) nowPlayingBody(c *ui.Context, tr *netease.Track, art *artwork, acc
 				a.scrubber(c.Key("np-scrub"), &a.npScrub, white.Alpha(0.18), white.Alpha(0.9), 16, accent.Mix(white, 0.35))
 				// As tall with the quality's badge as without it: the badge goes
 				// while the next song loads, and the column would move with it.
+				// The times on either side take the same room, so the badges
+				// between them stay in the middle however wide each is.
 				ui.Row(c).Height(16).AlignItems(ui.Center).Children(func() {
-					ui.Text(c, clock(pl.Position())).FontSize(11).FontFeatures("tnum").TextColor(white.Alpha(0.5))
-					ui.Spacer(c)
-					qualityBadge(c, pl.Stream())
-					ui.Spacer(c)
-					status := "-" + clock(pl.Duration()-pl.Position())
-					if pl.Loading() {
-						status = "正在缓冲…"
-					}
-					ui.Text(c, status).FontSize(11).FontFeatures("tnum").TextColor(white.Alpha(0.5))
+					ui.Row(c).Grow(1).Basis(0).MinWidth(0).Children(func() {
+						ui.Text(c, clock(pl.Position())).FontSize(11).FontFeatures("tnum").TextColor(white.Alpha(0.5))
+					})
+					qualityBadges(c, pl.Stream())
+					ui.Row(c).Grow(1).Basis(0).MinWidth(0).Justify(ui.End).Children(func() {
+						status := "-" + clock(pl.Duration()-pl.Position())
+						if pl.Loading() {
+							status = "正在缓冲…"
+						}
+						ui.Text(c, status).FontSize(11).FontFeatures("tnum").TextColor(white.Alpha(0.5))
+					})
 				})
 				ui.Box(c).Margin(14, 0, 18, 0).Children(func() {
 					a.transport(c, white, white.Alpha(0.45), accent, 28)
@@ -346,17 +350,43 @@ func (a *app) radioChip(c *ui.Context, name string) {
 	}
 }
 
-// qualityBadge marks a lossless stream, as it plays.
-func qualityBadge(c *ui.Context, st *netease.Stream) {
-	if st == nil || !netease.Lossless(st.Level) {
+// qualityBadges mark a lossless stream as it plays; and one from the
+// fallback source with a badge saying so, beside the quality it gave,
+// whatever it is.
+func qualityBadges(c *ui.Context, st *netease.Stream) {
+	if st == nil || !st.Fallback && !netease.Lossless(st.Level) {
 		return
 	}
-	label := "无损"
-	if st.Level == "hires" {
-		label = "Hi-Res"
+	gold := ui.Hex("#f5d58a")
+	ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
+		if st.Fallback {
+			streamBadge(c, "备用音源", ui.Hex("#9fd0ff"))
+		}
+		streamBadge(c, levelLabel(st.Level), gold)
+	})
+}
+
+// streamBadge is a small outlined label, as the quality's.
+func streamBadge(c *ui.Context, label string, color ui.Color) {
+	ui.Text(c, label).FontSize(9.5).FontWeight(800).LetterSpacing(0.6).TextColor(color).
+		Padding(1, 6).Radius(4).Border(1, color.Alpha(0.55)).SingleLine()
+}
+
+// levelLabel names a stream's level shortly, as its badge does.
+func levelLabel(level string) string {
+	switch level {
+	case "standard":
+		return "标准"
+	case "higher":
+		return "较高"
+	case "exhigh":
+		return "极高"
+	case "lossless":
+		return "无损"
+	case "hires":
+		return "Hi-Res"
 	}
-	ui.Text(c, label).FontSize(9.5).FontWeight(800).LetterSpacing(0.6).TextColor(ui.Hex("#f5d58a")).
-		Padding(1, 6).Radius(4).Border(1, ui.Hex("#f5d58a").Alpha(0.55))
+	return level
 }
 
 // stageBar is the slim bar along the foot of the stage: what plays, where

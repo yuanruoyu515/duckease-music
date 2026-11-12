@@ -27,7 +27,7 @@ func TestFallbackStream(t *testing.T) {
 			}
 			continue
 		}
-		if err != nil || s.Type != c.typ || s.Level != c.wantLevel || s.URL[:8] != "https://" {
+		if err != nil || s.Type != c.typ || s.Level != c.wantLevel || s.URL[:8] != "https://" || !s.Fallback {
 			t.Errorf("%q at %s: got %+v, %v", c.url, c.level, s, err)
 		}
 	}
@@ -48,5 +48,26 @@ func TestFallbackLimit(t *testing.T) {
 	}
 	if !fallbackAllow(now.Add(fallbackWindow)) {
 		t.Fatal("not allowed once the window passed")
+	}
+}
+
+// Usage counts the requests within the window, and says when the oldest
+// of them stops counting.
+func TestFallbackUsage(t *testing.T) {
+	fallbackSent.times = nil
+	defer func() { fallbackSent.times = nil }()
+	now := time.Unix(1000, 0)
+	fallbackAllow(now)
+	fallbackAllow(now.Add(time.Minute))
+	used, limit, freeIn := FallbackUsage(now.Add(2 * time.Minute))
+	if used != 2 || limit != fallbackLimit || freeIn != 3*time.Minute {
+		t.Fatalf("got %d/%d, free in %v", used, limit, freeIn)
+	}
+	used, _, freeIn = FallbackUsage(now.Add(fallbackWindow))
+	if used != 1 || freeIn != time.Minute {
+		t.Fatalf("after the first expired: got %d, free in %v", used, freeIn)
+	}
+	if used, _, freeIn = FallbackUsage(now.Add(time.Hour)); used != 0 || freeIn != 0 {
+		t.Fatalf("an hour on: got %d, free in %v", used, freeIn)
 	}
 }

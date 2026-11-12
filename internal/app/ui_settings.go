@@ -1,7 +1,9 @@
 package app
 
 import (
+	"fmt"
 	"runtime"
+	"time"
 
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
@@ -124,6 +126,9 @@ func (a *app) settingsView(c *ui.Context) {
 					a.changed()
 				}
 			})
+			if s.Fallback {
+				a.fallbackQuota(c, p)
+			}
 			row("显示评论", "在播放页显示歌曲评论；关闭后不再加载评论，间奏热评也一并关闭", func() {
 				show := !s.HideComments
 				if ui.Switch(c.Key("comments"), &show).Label("显示评论").Changed() {
@@ -244,4 +249,57 @@ func (a *app) settingsView(c *ui.Context) {
 			})
 		})
 	})
+}
+
+// fallbackQuota shows how much of the fallback source's five minutes'
+// allowance is used: a bar filling toward the limit, and when a request
+// frees up again.
+func (a *app) fallbackQuota(c *ui.Context, p palette) {
+	used, limit, freeIn := netease.FallbackUsage(c.Now())
+	if freeIn > 0 {
+		// Drawn again each second, for the countdown, until the oldest
+		// request stops counting.
+		c.After(min(freeIn, time.Second))
+	}
+	frac := float32(used) / float32(limit)
+	color := p.accent
+	switch {
+	case used >= limit:
+		color = ui.Hex("#e5484d")
+	case frac >= 0.75:
+		color = ui.Hex("#f5a524")
+	}
+	ui.Column(c.Key("fallback-quota")).Padding(10, 16, 12, 16).Gap(7).Children(func() {
+		ui.Row(c).AlignItems(ui.Center).Children(func() {
+			ui.Text(c, "5 分钟限额").FontSize(12).TextColor(p.muted).Grow(1)
+			ui.Textf(c, "%d / %d 次", used, limit).FontSize(12).FontFeatures("tnum").TextColor(p.muted)
+		})
+		track := p.hover.Over(p.bg)
+		ui.Box(c).Height(6).Label(fmt.Sprintf("备用音源 5 分钟内已用 %d 次，共 %d 次", used, limit)).
+			Draw(func(pt *ui.Painter, r ui.Rect) {
+				pt.Fill(r, track, r.H/2)
+				if used > 0 {
+					w := max(r.H, r.W*min(frac, 1))
+					pt.Fill(ui.Rect{X: r.X, Y: r.Y, W: w, H: r.H}, color, r.H/2)
+				}
+			})
+		note := "还没有请求过备用音源"
+		switch {
+		case used >= limit:
+			note = "已用完，" + waitText(freeIn) + "后恢复 1 次"
+		case used > 0:
+			note = "最早的一次请求将在 " + waitText(freeIn) + "后释放"
+		}
+		ui.Text(c, note).FontSize(11.5).TextColor(p.faint)
+	})
+}
+
+// waitText says how long d is, to the second under a minute and to the
+// minute above it.
+func waitText(d time.Duration) string {
+	s := int((d + time.Second - 1) / time.Second)
+	if s < 60 {
+		return fmt.Sprintf("%d 秒", s)
+	}
+	return fmt.Sprintf("%d 分 %d 秒", s/60, s%60)
 }

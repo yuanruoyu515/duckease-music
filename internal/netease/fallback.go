@@ -67,6 +67,27 @@ func fallbackAllow(now time.Time) bool {
 	return true
 }
 
+// FallbackUsage reports how many requests went to the fallback source
+// within the last fallbackWindow, out of limit, and how long until the
+// oldest of them no longer counts: 0 with none.
+func FallbackUsage(now time.Time) (used, limit int, freeIn time.Duration) {
+	s := &fallbackSent
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, t := range s.times {
+		if left := fallbackWindow - now.Sub(t); left > 0 {
+			if used == 0 || left < freeIn {
+				freeIn = left
+			}
+			used++
+		}
+	}
+	return used, fallbackLimit, freeIn
+}
+
+// FallbackWindow is the span FallbackUsage counts requests over.
+const FallbackWindow = fallbackWindow
+
 // fallbackBitrates are the bit rates the site names the levels by.
 var fallbackBitrates = map[string]string{
 	"standard": "128",
@@ -118,7 +139,7 @@ func fallbackStream(u string, br int, size int64, level string) (*Stream, error)
 	if u == "" || br == 0 {
 		return nil, ErrFallbackUnavailable
 	}
-	s := &Stream{URL: strings.Replace(u, "http://", "https://", 1), Size: size}
+	s := &Stream{URL: strings.Replace(u, "http://", "https://", 1), Size: size, Fallback: true}
 	path := u
 	if i := strings.IndexAny(path, "?#"); i >= 0 {
 		path = path[:i]
