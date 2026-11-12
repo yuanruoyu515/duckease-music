@@ -8,7 +8,7 @@ The screenshots are rendered by the application's actual native Go views through
 NM_PRESS_SHOTS="$PWD/assets/screenshots" CGO_ENABLED=0   go test ./internal/app -run '^TestPressScreenshots$' -count=1
 ```
 
-`internal/app/press_test.go` renders home, Now Playing (with a song from the fallback source), the lyric stage, the queue, a playlist sorted by name, songs picked on a playlist, the playlist manager, the cover picker and the sidebar editor in light and dark appearances at 1200 × 800, plus the Playback and Backup groups of the settings window at 560 points wide. The fallback quota and the last backup time shown are fixed demo values. Home greetings and date labels use the tester's current clock; screenshot pixels are deliberately not asserted.
+`internal/app/press_test.go` renders home, Now Playing (with a song from the fallback source, and with the fog backdrop), the lyric stage in its three styles, the cover wall, the queue, the daily recommendations, a playlist sorted by name, songs picked on a playlist, the playlist manager, the cover picker and the sidebar editor in light and dark appearances at 1200 × 800, plus the Playback and Backup groups of the settings window at 560 points wide. The fallback quota and the last backup time shown are fixed demo values. Home greetings and date labels use the tester's current clock; screenshot pixels are deliberately not asserted.
 
 The original demo lyrics are written for this repository and are not transcribed from a recording. Abstract artwork is drawn by `pressCover`. No music is played or downloaded. Inspect new images before committing them.
 

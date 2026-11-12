@@ -29,7 +29,7 @@ func TestPressScreenshots(t *testing.T) {
 	}
 	fallbackUsage = func(time.Time) (int, int, time.Duration) { return 12, 40, 3*time.Minute + 12*time.Second }
 	defer func() { fallbackUsage = netease.FallbackUsage }()
-	for _, scene := range []string{"home", "now-playing", "stage", "queue", "playlist", "settings", "picking", "manager", "cover-picker", "sidebar", "backup"} {
+	for _, scene := range []string{"home", "now-playing", "stage", "queue", "playlist", "settings", "picking", "manager", "cover-picker", "sidebar", "backup", "wall", "stage-partita", "stage-tilt", "fog", "daily"} {
 		for _, dark := range []bool{false, true} {
 			a := pressApp()
 			view, w, h := a.view, 1200, 800
@@ -47,6 +47,16 @@ func TestPressScreenshots(t *testing.T) {
 				a.nowPlaying = true
 				// A song the fallback source served, as its badges say.
 				a.pl.SetStream(&netease.Stream{Level: "lossless", Type: "flac", Fallback: true})
+			case "wall":
+				a.nowPlaying, a.npPane = true, paneWall
+			case "stage-partita", "stage-tilt":
+				a.nowPlaying, a.npPane = true, paneStage
+				a.settings.StageStyle = scene[len("stage-"):]
+			case "fog":
+				a.nowPlaying = true
+				a.settings.Fog = true
+			case "daily":
+				a.route = route{page: pageDaily}
 			case "picking":
 				pl := a.playlists[a.mine[1].ID]
 				a.route = route{page: pagePlaylist, id: pl.ID}
