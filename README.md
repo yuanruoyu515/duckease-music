@@ -87,6 +87,7 @@ Availability comes from the platform. Selecting a quality does not create an ent
 - Added bounded playback retries and diagnostic logging. When the platform returns risk-control code `-460`, the player stops and cools down instead of skipping through the queue.
 - Removed the inherited website, its music demo, and the original author's release/signing workflow from this publication.
 - Added playlist sorting, Feeling lucky, and playlist search; an optional fallback source; and a switch for comments.
+- Unreleased: pick songs on a playlist page to add, move, or remove them together; a playlist manager for deleting, unsaving, copying, or merging several playlists; local cover images for your own playlists; a customizable sidebar; a badge for songs from the fallback source and its five-minute quota in Settings; manual backup of the app's own settings to iCloud Drive. The notch player is gone.
 
 See [provenance and modification dates](NOTICE.md), [changes](CHANGELOG.md), and [maintenance notes](MAINTENANCE.md). This repository starts from a clean publication snapshot; older local development history is not uploaded with it.
 

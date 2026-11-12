@@ -48,6 +48,13 @@ brew install go                # 需要 go.mod 里写的 Go 1.27.3
 
 UI 框架的规则（Context、Element 生命周期、线程）见 `.agents/skills/mygo-maintenance/SKILL.md`，改界面前先读。
 
+## 本机数据与备份
+
+- 侧边栏的顺序和隐藏项在 `settings.json` 的 `sidebar`，正在播放卡片在 `hideSideNowPlaying`。新加的侧边栏区块记得加进 `internal/app/sidebar.go` 的 `sideSections`，旧设置里没有的项会自动排到最后并显示。
+- 自定义歌单封面存在用户数据目录的 `covers/<歌单 ID>.jpg`，最长边裁到 1000 px。删歌单时一并删掉。
+- iCloud 备份写到 `~/Library/Mobile Documents/com~apple~CloudDocs/DuckEase Music/DuckEase Music 备份.zip`，内含 `manifest.json`、`settings.json` 和 `covers/`。改备份结构时把 `backupFormat` 加一，旧版遇到新格式会拒绝恢复。不要把登录态、`session.json` 或缓存放进去。
+- 批量加歌、删歌单、复制歌单都在 `internal/app/bulk.go`：请求串行，间隔 `bulkPause`（400 ms），每次最多 `bulkChunk`（200）首。别改成并发，原因见上面的 `-460` 一节。
+
 ## 依赖
 
 - 最大的外部依赖是 UI 框架 [egoist/mygo](https://github.com/egoist/mygo)。它没有下线，仍在更新。`go.mod` 固定在一个伪版本上，不升级就不会变。
@@ -93,6 +100,8 @@ LIVE=1 CGO_ENABLED=0 go test ./internal/netease/ -run Live -count=1 -v
 - 站方限 5 分钟 50 次，`fallbackLimit` 设为 40，超出就不请求、直接报无法播放。
 - 返回的 `size` 实测是字节，文档写的 KB 不对。地址带时间戳会过期，只现取，不存。
 - 坏了先跑 `LIVE=1 CGO_ENABLED=0 go test ./internal/netease/ -run FallbackURLLive -count=1 -v`，日志里搜 `fallback source`。
+
+- 播放页的「备用音源」标签看 `netease.Stream.Fallback`，它随歌曲一起写进缓存的 `.json`；设置里的限额条读 `netease.FallbackUsage`。
 
 ### 按症状对照
 
