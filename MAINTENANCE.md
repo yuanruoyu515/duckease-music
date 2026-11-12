@@ -51,7 +51,7 @@ UI 框架的规则（Context、Element 生命周期、线程）见 `.agents/skil
 ## 本机数据与备份
 
 - 侧边栏的顺序和隐藏项在 `settings.json` 的 `sidebar`，正在播放卡片在 `hideSideNowPlaying`。新加的侧边栏区块记得加进 `internal/app/sidebar.go` 的 `sideSections`，旧设置里没有的项会自动排到最后并显示。
-- 自定义歌单封面存在用户数据目录的 `covers/<歌单 ID>.jpg`，最长边裁到 1000 px。删歌单时一并删掉。
+- 自定义歌单封面存在用户数据目录的 `covers/<歌单 ID>.jpg`，裁成正方形，边长最多 1000 px。删歌单时一并删掉。
 - iCloud 备份写到 `~/Library/Mobile Documents/com~apple~CloudDocs/DuckEase Music/DuckEase Music 备份.zip`，内含 `manifest.json`、`settings.json` 和 `covers/`。改备份结构时把 `backupFormat` 加一，旧版遇到新格式会拒绝恢复。不要把登录态、`session.json` 或缓存放进去。
 - 批量加歌、删歌单、复制歌单都在 `internal/app/bulk.go`：请求串行，间隔 `bulkPause`（400 ms），每次最多 `bulkChunk`（200）首。别改成并发，原因见上面的 `-460` 一节。
 
