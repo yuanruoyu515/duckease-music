@@ -146,7 +146,8 @@ type app struct {
 	aboutWin    *mygo.Window
 	// updateChecking says a check for updates is on its way.
 	updateChecking bool
-	cacheUsed      int64 // the bytes the song cache takes, -1 until measured
+	cacheUsed      int64       // the bytes the song cache takes, -1 until measured
+	backup         backupState // the backup in iCloud Drive, as the settings show it
 
 	restored     bool   // playback picked up where it was left
 	savedSession string // the session as last kept

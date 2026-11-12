@@ -104,7 +104,7 @@ func (a *app) moveSide(rows []int, to int) {
 		at = len(rest)
 	}
 	a.settings.Sidebar = slices.Insert(rest, at, moved...)
-	a.changed()
+	a.keepSettings()
 }
 
 // setSideHidden hides the section id or shows it again, and keeps it.
@@ -116,7 +116,7 @@ func (a *app) setSideHidden(id string, hidden bool) {
 		}
 	}
 	a.settings.Sidebar = order
-	a.changed()
+	a.keepSettings()
 }
 
 // sidebarSections builds the sidebar's sections, in the order and with
@@ -231,7 +231,7 @@ func (a *app) sidebarEditor(c *ui.Context) {
 			shown := !a.settings.HideSideNowPlaying
 			if ui.Switch(c.Key("np-card"), &shown).Label("底部的正在播放").Changed() {
 				a.settings.HideSideNowPlaying = !shown
-				a.changed()
+				a.keepSettings()
 			}
 		})
 		ui.Row(c).Gap(10).Justify(ui.End).Margin(4, 0, 0, 0).Children(func() {
@@ -241,11 +241,18 @@ func (a *app) sidebarEditor(c *ui.Context) {
 			}
 			if reset.Clicked() {
 				a.settings.Sidebar, a.settings.HideSideNowPlaying = nil, false
-				a.changed()
+				a.keepSettings()
 			}
 			if pillButton(c.Key("done"), nil, "完成", p.accent, p.onAccent).Clicked() {
 				a.customizing = false
 			}
 		})
 	})
+}
+
+// keepSettings keeps the settings and redraws, for a change nothing else
+// needs to hear of.
+func (a *app) keepSettings() {
+	a.settings.save()
+	a.redraw()
 }

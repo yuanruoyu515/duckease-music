@@ -2,6 +2,7 @@ package app
 
 import (
 	"testing"
+	"time"
 
 	"github.com/egoist/mygo/ui"
 
@@ -76,5 +77,50 @@ func TestNewPlaylistInCollapsedSidebar(t *testing.T) {
 	}
 	if !a.mineCollapsed || !a.savedCollapsed {
 		t.Error("the plus also toggled a playlist section")
+	}
+}
+
+// The sidebar's editor hides a section, which leaves the sidebar, and
+// moves one down, which the sidebar then lists after the next.
+func TestCustomizeSidebar(t *testing.T) {
+	a := editTestApp()
+	a.route = route{page: pageHome}
+	a.homeLoading = true
+	tt := ui.NewTester(a.view, 1200, 800)
+	tt.Frame()
+	if err := tt.Click("自定义侧边栏"); err != nil {
+		t.Fatal(err)
+	}
+	tt.Advance(300 * time.Millisecond)
+	tt.Frame()
+	if err := tt.Click("显示“排行榜”"); err != nil {
+		t.Fatal(err)
+	}
+	tt.Frame()
+	if err := tt.Click("下移“为你推荐”"); err != nil {
+		t.Fatal(err)
+	}
+	tt.Frame()
+	if err := tt.Click("完成"); err != nil {
+		t.Fatal(err)
+	}
+	tt.Advance(300 * time.Millisecond)
+	tt.Frame()
+	if _, ok := tt.Find("排行榜"); ok {
+		t.Error("the hidden section still shows")
+	}
+	home, ok1 := tt.Find("为你推荐")
+	daily, ok2 := tt.Find("每日推荐")
+	if !ok1 || !ok2 || home.Y <= daily.Y {
+		t.Errorf("为你推荐 at %v, 每日推荐 at %v: want it moved below", home, daily)
+	}
+}
+
+// The order kept lists each section once, those it lacks at its end, and
+// drops those no longer known.
+func TestSidebarOrder(t *testing.T) {
+	got := sidebarOrder([]sideItem{{ID: "saved"}, {ID: "gone"}, {ID: "saved", Hidden: true}, {ID: "fm", Hidden: true}})
+	if len(got) != len(sideSections) || got[0] != (sideItem{ID: "saved"}) || got[1] != (sideItem{ID: "fm", Hidden: true}) || got[2].ID != "home" {
+		t.Errorf("got %+v", got)
 	}
 }

@@ -17,9 +17,11 @@ func (a *app) openSettings() {
 		a.settingsWin.Show()
 		a.settingsWin.Focus()
 		a.measureCache()
+		a.checkBackup()
 		return
 	}
 	a.measureCache()
+	a.checkBackup()
 	a.settingsWin = mygo.NewWindow(mygo.WindowOptions{
 		Title:           "设置",
 		Width:           560,
@@ -207,6 +209,36 @@ func (a *app) settingsView(c *ui.Context) {
 				}
 			})
 		})
+
+		// iCloud Drive is macOS's.
+		if runtime.GOOS == "darwin" {
+			group("备份", func() {
+				b := &a.backup
+				desc := "把本机的设置、侧边栏布局、搜索记录和自定义歌单封面存到 iCloud 云盘的“" + backupFolder + "”文件夹，换电脑或重装后可以恢复。不包含网易云账号和登录信息。"
+				switch {
+				case b.err != "":
+					desc += "\n" + b.err
+				case !b.at.IsZero():
+					desc += "\n上次备份：" + b.at.Local().Format("2006-01-02 15:04")
+				case b.checked:
+					desc += "\n还没有备份过"
+				}
+				row("备份到 iCloud 云盘", desc, func() {
+					label := "立即备份"
+					if b.busy {
+						label = "请稍候…"
+					}
+					if ui.Button(c.Key("backup"), label).Disabled(b.busy).Clicked() {
+						a.backupNow()
+					}
+				})
+				row("从 iCloud 恢复", "用 iCloud 云盘里的备份替换本机的上述设置，恢复前会再确认一次", func() {
+					if ui.Button(c.Key("restore"), "恢复…").Disabled(b.busy || b.checked && b.at.IsZero()).Clicked() {
+						a.restoreNow()
+					}
+				})
+			})
+		}
 
 		group("更新", func() {
 			row("自动检查更新", "启动后和每天检查一次 GitHub 上的新版本，有新版本时提示下载，也可以忽略这个版本", func() {
