@@ -1,14 +1,14 @@
 # DuckEase Music — corresponding source
 
-Version: **0.1.25-duckease.4**
+Version: **0.1.25-duckease.5**
 
-This binary is built from the tag `v0.1.25-duckease.4` in:
+This binary is built from the tag `v0.1.25-duckease.5` in:
 
-https://github.com/yuanruoyu515/duckease-music/tree/v0.1.25-duckease.4
+https://github.com/yuanruoyu515/duckease-music/tree/v0.1.25-duckease.5
 
 Download the corresponding source archive:
 
-https://github.com/yuanruoyu515/duckease-music/archive/refs/tags/v0.1.25-duckease.4.tar.gz
+https://github.com/yuanruoyu515/duckease-music/archive/refs/tags/v0.1.25-duckease.5.tar.gz
 
 The archive includes the application source, dependency declarations, packaging configuration, and build scripts. Build requirements and commands are in README.md and RELEASING.md. Source remains under AGPL-3.0; the bundled LICENSE contains its terms. NOTICE.md records the original authorship and this fork's modifications.
 

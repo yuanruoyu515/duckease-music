@@ -44,30 +44,29 @@
 
 <table>
   <tr>
-    <td width="50%" valign="top"><b>正在播放</b><br>封面、播放控制和滚动歌词放在一页。<br><br><picture><source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/now-playing-dark.png"><img alt="正在播放页，橙色演示封面旁显示本项目原创的中文演示歌词" src="assets/screenshots/now-playing-light.png"></picture></td>
+    <td width="50%" valign="top"><b>正在播放</b><br>封面、播放控制和滚动歌词放在一页。歌来自备用音源时，进度条下面会标出来。<br><br><picture><source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/now-playing-dark.png"><img alt="正在播放页，橙色演示封面旁显示本项目原创的中文演示歌词" src="assets/screenshots/now-playing-light.png"></picture></td>
     <td width="50%" valign="top"><b>歌词律动</b><br>切到单独的舞台，看歌词跟着播放进度变化。<br><br><picture><source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/stage-dark.png"><img alt="歌词律动页，展示本项目原创演示歌词中的一句" src="assets/screenshots/stage-light.png"></picture></td>
   </tr>
 </table>
 
-## 0.1.25-duckease.4 新功能
-
-- **批量管理歌单**：歌单页点「批量选择」，勾选的歌可以加到、移到别的歌单，或从当前歌单移除。侧边栏「我的歌单」「收藏的歌单」旁的按钮打开管理窗口，可以批量删除、取消收藏、复制或合并歌单。
-- **自定义封面**：在自己歌单封面右下角的「⋯」里换图，可以搜歌单里歌曲的专辑封面，也可以用本机图片，只存在本机。
-- **自定义侧边栏**：每一项都能关掉或调整顺序。
-- **备用音源提示**：播放页标出来自备用音源的歌和它的音质；设置里能看到 5 分钟限额用了多少。
-- **iCloud 备份**：在「设置 → 备份」里手动备份和恢复本机设置，不含网易云账号。
-- 刘海播放器已删除。
-
-## 0.1.25-duckease.3 新功能
+## 0.1.25-duckease.5 新功能
 
 <table>
   <tr>
-    <td width="58%" valign="top"><b>歌单排序与搜索</b><br>可以按歌名、歌手、专辑、时长排序，也可以倒序，中文按拼音排。<b>试试手气</b>每点一次就打乱成新的顺序，播放按页面上的顺序走。搜索框按歌名、歌手、专辑筛选，歌单里没有的歌，点一下就能到全部歌曲里搜。<br><br><picture><source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/playlist-dark.png"><img alt="按歌名排序的演示歌单，歌曲上方是排序菜单、试试手气按钮和歌单内搜索框" src="assets/screenshots/playlist-light.png"></picture></td>
-    <td width="42%" valign="top"><b>备用音源与评论开关</b><br>都在「设置 → 播放」里。<b>备用音源</b>默认关闭，打开后，网易云加载失败的歌和歌单里的灰色歌曲改从 <a href="https://music.gdstudio.xyz">GD音乐台(music.gdstudio.xyz)</a> 取，两边都没有才提示无法播放。<b>显示评论</b>控制播放页的评论和间奏热评。<br><br><picture><source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/settings-dark.png"><img alt="设置的播放分组，含备用音源与显示评论两个开关" src="assets/screenshots/settings-light.png"></picture></td>
+    <td width="50%" valign="top"><b>批量选择歌曲</b><br>歌单页点「批量选择」，点歌就是勾选，Shift 连选，⌘A 全选。底部浮条把选中的歌加到歌单、移到另一个歌单，或从当前歌单移除。「我喜欢的音乐」也能这样批量取消喜欢。<br><br><picture><source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/picking-dark.png"><img alt="演示歌单处于批量选择状态，勾选了三首歌，底部浮条有添加到歌单、移到歌单和移除" src="assets/screenshots/picking-light.png"></picture></td>
+    <td width="50%" valign="top"><b>管理歌单</b><br>侧边栏歌单分组旁的按钮打开。自己的歌单可以多选后复制、迁移到一个歌单，或一起删除；收藏的歌单可以复制成自己的、合并，或一起取消收藏。请求逐个发出，避开网易云的风控。<br><br><picture><source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/manager-dark.png"><img alt="管理歌单窗口，「我创建的」标签下勾选了两个演示歌单，底部有复制到、迁移到和删除" src="assets/screenshots/manager-light.png"></picture></td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top"><b>换封面</b><br>自己歌单封面右下角的「⋯」里选「更换封面」，从歌单里歌曲的专辑封面中搜一张，或者用本机图片。封面只存在这台电脑上。<br><br><picture><source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/cover-picker-dark.png"><img alt="更换封面窗口，列出演示歌单里歌曲的封面，上方是搜索框，下方是从本机选择图片" src="assets/screenshots/cover-picker-light.png"></picture></td>
+    <td width="50%" valign="top"><b>自定义侧边栏</b><br>侧边栏末尾的「自定义侧边栏」：每一项都能关掉，拖动或用箭头调顺序，底部的正在播放卡片也能隐藏。<br><br><picture><source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/sidebar-dark.png"><img alt="自定义侧边栏窗口，排行榜和播客已关闭，我的歌单被移到私人 FM 上方" src="assets/screenshots/sidebar-light.png"></picture></td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top"><b>备用音源看得见</b><br>歌从备用音源来时，播放页在进度条下面标出「备用音源」和它给的音质。打开备用音源后，设置里能看到 5 分钟 40 次的额度用了多少。<br><br><picture><source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/settings-dark.png"><img alt="设置的播放分组，备用音源开关下面是 5 分钟限额进度条，显示 12 / 40 次" src="assets/screenshots/settings-light.png"></picture></td>
+    <td width="50%" valign="top"><b>iCloud 备份</b><br>「设置 → 备份」手动把设置、侧边栏布局、搜索记录和自定义封面存到 iCloud 云盘，换电脑后能恢复。不含网易云账号和登录信息。<br><br><picture><source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/backup-dark.png"><img alt="设置的备份分组，有立即备份和从 iCloud 恢复两个按钮，显示上次备份时间" src="assets/screenshots/backup-light.png"></picture></td>
   </tr>
 </table>
 
-另外，应用会检查本仓库的新版本并提示下载，「关于」窗口里有我的 GitHub 和 Threads 链接。
+另外，刘海播放器已经删掉了，「⋯」按钮挪到了歌单封面右下角。
 
 ## 本机内存截图：191 MB
 
@@ -85,6 +84,7 @@ Go 原生界面，不套 WebView。下面是我自己 Mac 上的占用截图，*
 | 标准到 Hi-Res，取决于实际权限 | 搜索歌曲、歌手、专辑、用户、播客 | 本地歌曲缓存、恢复上次进度 |
 | 同步歌词、翻译 | 私人 FM、心动模式 | 封面手势、键盘操作 |
 | 收听和订阅播客 | 歌手页、专辑页、用户页 | 可自定义的侧边栏 |
+| 批量选歌、移动、移除 | 歌单管理、复制收藏的歌单 | 自定义歌单封面、iCloud 备份 |
 
 功能可用性由平台决定。选了某种音质，不等于获得了对应播放权限。本项目不增加会员解锁功能，也不承诺绕过访问限制。唯一的例外默认关闭、需要自己打开：设置里的「备用音源」会在歌曲加载失败或显示为灰色时，向第三方的 [GD音乐台](https://music.gdstudio.xyz) 接口取播放地址。它是别人运营的免费服务，仅限个人学习使用，可能随时停止。
 
@@ -96,12 +96,13 @@ Go 原生界面，不套 WebView。下面是我自己 Mac 上的占用截图，*
 - 播放失败时有限次数重试并记录诊断日志；收到风控代码 `-460` 时停下冷却，避免连续跳过整张歌单。
 - 公开版移除了继承的旧官网、网站歌曲演示和原作者的签名发布工作流。
 - 新增歌单排序、试试手气、歌单内搜索，可选的备用音源，以及评论开关。
+- 新增批量选择歌曲、歌单管理、自定义歌单封面、自定义侧边栏和 iCloud 备份；删除刘海播放器。
 
 具体来源与修改日期见 [NOTICE.md](NOTICE.md)，改动见[更新日志](CHANGELOG.md)，技术细节见[维护说明](MAINTENANCE.md)。公开仓库从清理后的源码快照开始，较早的本地开发历史不随之上传。
 
 ## macOS 安装
 
-[**下载 macOS DMG 安装包**](https://github.com/yuanruoyu515/duckease-music/releases/download/v0.1.25-duckease.4/duckease-music-0.1.25-duckease.4.dmg) · [发布说明与校验值](https://github.com/yuanruoyu515/duckease-music/releases/tag/v0.1.25-duckease.4)
+[**下载 macOS DMG 安装包**](https://github.com/yuanruoyu515/duckease-music/releases/download/v0.1.25-duckease.5/duckease-music-0.1.25-duckease.5.dmg) · [发布说明与校验值](https://github.com/yuanruoyu515/duckease-music/releases/tag/v0.1.25-duckease.5)
 
 1. 下载并打开 DMG。
 2. 把 **DuckEase Music** 拖进旁边的 **Applications（应用程序）**。

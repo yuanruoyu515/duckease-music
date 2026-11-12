@@ -283,11 +283,15 @@ func (a *app) settingsView(c *ui.Context) {
 	})
 }
 
+// fallbackUsage reads the fallback source's allowance; the README's
+// screenshots replace it.
+var fallbackUsage = netease.FallbackUsage
+
 // fallbackQuota shows how much of the fallback source's five minutes'
 // allowance is used: a bar filling toward the limit, and when a request
 // frees up again.
 func (a *app) fallbackQuota(c *ui.Context, p palette) {
-	used, limit, freeIn := netease.FallbackUsage(c.Now())
+	used, limit, freeIn := fallbackUsage(c.Now())
 	if freeIn > 0 {
 		// Drawn again each second, for the countdown, until the oldest
 		// request stops counting.

@@ -44,21 +44,29 @@ These are renders of the app's actual Go views, using invented songs, original d
 
 <table>
   <tr>
-    <td width="50%" valign="top"><b>Now Playing</b><br>Cover art, playback controls, and a scrollable lyric view.<br><br><picture><source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/now-playing-dark.png"><img alt="Now Playing with an orange demo sleeve and original Chinese demo lyrics" src="assets/screenshots/now-playing-light.png"></picture></td>
+    <td width="50%" valign="top"><b>Now Playing</b><br>Cover art, playback controls, and a scrollable lyric view. A song from the fallback source is marked under the progress bar.<br><br><picture><source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/now-playing-dark.png"><img alt="Now Playing with an orange demo sleeve and original Chinese demo lyrics" src="assets/screenshots/now-playing-light.png"></picture></td>
     <td width="50%" valign="top"><b>Lyric stage</b><br>A separate view for the animated lyric styles.<br><br><picture><source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/stage-dark.png"><img alt="The lyric stage rendering a line from the project's original demo lyrics" src="assets/screenshots/stage-light.png"></picture></td>
   </tr>
 </table>
 
-## New in 0.1.25-duckease.3
+## New in 0.1.25-duckease.5
 
 <table>
   <tr>
-    <td width="58%" valign="top"><b>Sort and search a playlist</b><br>Sort by name, artist, album, or length, or reverse the list. Chinese titles sort by pinyin. <b>Feeling lucky</b> shuffles the list into a new order each time you press it, and playback follows the order on screen. The search box filters by title, artist, or album. If a song isn't in the playlist, one click searches the whole catalog.<br><br><picture><source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/playlist-dark.png"><img alt="A demo playlist sorted by name, with the sort menu, the Feeling lucky button, and the playlist search box above the songs" src="assets/screenshots/playlist-light.png"></picture></td>
-    <td width="42%" valign="top"><b>Fallback source and a comments switch</b><br>Both are under Settings → Playback. <b>Fallback source</b> is off by default. When it's on, songs that fail to load and greyed-out songs are fetched from <a href="https://music.gdstudio.xyz">GD音乐台(music.gdstudio.xyz)</a>. The app reports a song as unplayable only when both sources fail. <b>Show comments</b> turns the comments tab and the hot comments between verses on or off.<br><br><picture><source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/settings-dark.png"><img alt="The Playback settings group, with the Fallback source and Show comments switches" src="assets/screenshots/settings-light.png"></picture></td>
+    <td width="50%" valign="top"><b>Pick songs</b><br>Press 批量选择 on a playlist page, then click songs to pick them, Shift-click for a range, ⌘A for all. A floating bar adds them to a playlist, moves them to another, or removes them. Liked songs can be unliked this way too.<br><br><picture><source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/picking-dark.png"><img alt="A demo playlist in picking mode with three songs checked and a floating bar to add, move, or remove them" src="assets/screenshots/picking-light.png"></picture></td>
+    <td width="50%" valign="top"><b>Playlist manager</b><br>From the buttons beside the sidebar's playlist headers. Copy or migrate several of your playlists into one, or delete them together; copy saved playlists as your own, merge them, or unsave them. Requests go one at a time to stay clear of NetEase's risk control.<br><br><picture><source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/manager-dark.png"><img alt="The playlist manager with two demo playlists checked and buttons to copy, migrate, or delete" src="assets/screenshots/manager-light.png"></picture></td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top"><b>Covers</b><br>Open ⋯ on the corner of your own playlist's cover and choose 更换封面: search the album covers of its songs, or pick a picture from disk. The cover stays on this Mac.<br><br><picture><source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/cover-picker-dark.png"><img alt="The cover picker listing the album covers of a demo playlist's songs, with a search box and a button to choose a picture from disk" src="assets/screenshots/cover-picker-light.png"></picture></td>
+    <td width="50%" valign="top"><b>Your sidebar</b><br>自定义侧边栏 at the end of the sidebar turns each section on or off and reorders them by drag or arrows. The Now Playing card can be hidden too.<br><br><picture><source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/sidebar-dark.png"><img alt="The sidebar editor with Charts and Podcasts turned off and My playlists moved above Personal FM" src="assets/screenshots/sidebar-light.png"></picture></td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top"><b>Fallback source, visible</b><br>Songs from the fallback source carry a 备用音源 badge and the quality it served on Now Playing. With the fallback on, Settings shows how much of its 40 requests per five minutes is used.<br><br><picture><source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/settings-dark.png"><img alt="The Playback settings group with a five-minute quota bar under the fallback switch, at 12 of 40" src="assets/screenshots/settings-light.png"></picture></td>
+    <td width="50%" valign="top"><b>iCloud backup</b><br>Settings → Backup saves the app's settings, sidebar layout, search history and covers to iCloud Drive, by hand, and restores them on another Mac. Nothing of your NetEase account is included.<br><br><picture><source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/backup-dark.png"><img alt="The Backup settings group with Back up now and Restore from iCloud buttons and the last backup time" src="assets/screenshots/backup-light.png"></picture></td>
   </tr>
 </table>
 
-The app also checks this repository's releases for new versions and offers to download them, and its About window links to my GitHub and Threads.
+The notch player is gone, and the ⋯ button now sits on the playlist cover's corner.
 
 ## 191 MB on my Mac
 
@@ -76,6 +84,7 @@ One snapshot, not a fixed memory budget or a controlled benchmark. Usage changes
 | Standard through Hi-Res quality, when available | Songs, artists, albums, users, podcasts | Local audio cache and playback resume |
 | Synced lyrics and translations | Personal FM and Heartbeat mode | Cover gestures and keyboard controls |
 | Podcast playback and subscriptions | Artist, album, and user pages | Customizable sidebar |
+| Pick, move, and remove songs in bulk | Playlist manager, copy saved playlists | Custom playlist covers, iCloud backup |
 
 Availability comes from the platform. Selecting a quality does not create an entitlement to it. This project does not add subscription unlocking or a promise to bypass access restrictions. The one exception is opt-in and off by default: the **Fallback source** setting asks the third-party [GD音乐台](https://music.gdstudio.xyz) API for songs that fail to load or show greyed out. That service is free, run by someone else, for personal study only, and may stop at any time.
 
@@ -87,13 +96,13 @@ Availability comes from the platform. Selecting a quality does not create an ent
 - Added bounded playback retries and diagnostic logging. When the platform returns risk-control code `-460`, the player stops and cools down instead of skipping through the queue.
 - Removed the inherited website, its music demo, and the original author's release/signing workflow from this publication.
 - Added playlist sorting, Feeling lucky, and playlist search; an optional fallback source; and a switch for comments.
-- 0.1.25-duckease.4: pick songs on a playlist page to add, move, or remove them together; a playlist manager for deleting, unsaving, copying, or merging several playlists; local cover images for your own playlists; a customizable sidebar; a badge for songs from the fallback source and its five-minute quota in Settings; manual backup of the app's own settings to iCloud Drive. The notch player is gone.
+- Added picking songs in bulk, a playlist manager, custom playlist covers, a customizable sidebar and iCloud backup; removed the notch player.
 
 See [provenance and modification dates](NOTICE.md), [changes](CHANGELOG.md), and [maintenance notes](MAINTENANCE.md). This repository starts from a clean publication snapshot; older local development history is not uploaded with it.
 
 ## Install on macOS
 
-[**Download the macOS DMG**](https://github.com/yuanruoyu515/duckease-music/releases/download/v0.1.25-duckease.4/duckease-music-0.1.25-duckease.4.dmg) · [Release notes and checksums](https://github.com/yuanruoyu515/duckease-music/releases/tag/v0.1.25-duckease.4)
+[**Download the macOS DMG**](https://github.com/yuanruoyu515/duckease-music/releases/download/v0.1.25-duckease.5/duckease-music-0.1.25-duckease.5.dmg) · [Release notes and checksums](https://github.com/yuanruoyu515/duckease-music/releases/tag/v0.1.25-duckease.5)
 
 1. Download and open the DMG.
 2. Drag **DuckEase Music** onto **Applications** beside it.

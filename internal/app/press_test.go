@@ -27,7 +27,9 @@ func TestPressScreenshots(t *testing.T) {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	for _, scene := range []string{"home", "now-playing", "stage", "queue", "playlist", "settings"} {
+	fallbackUsage = func(time.Time) (int, int, time.Duration) { return 12, 40, 3*time.Minute + 12*time.Second }
+	defer func() { fallbackUsage = netease.FallbackUsage }()
+	for _, scene := range []string{"home", "now-playing", "stage", "queue", "playlist", "settings", "picking", "manager", "cover-picker", "sidebar", "backup"} {
 		for _, dark := range []bool{false, true} {
 			a := pressApp()
 			view, w, h := a.view, 1200, 800
@@ -37,10 +39,31 @@ func TestPressScreenshots(t *testing.T) {
 				a.playlists[pl.ID] = &pl
 				a.route = route{page: pagePlaylist, id: pl.ID}
 				a.plFilter = plFilter{id: pl.ID, sort: sortName}
-			case "settings":
-				view, w, h = a.settingsView, 560, 1100
+			case "settings", "backup":
+				view, w, h = a.settingsView, 560, 1500
+				a.settings.Fallback = true
+				a.backup = backupState{checked: true, at: time.Date(2026, 11, 12, 21, 30, 0, 0, time.Local)}
 			case "now-playing":
 				a.nowPlaying = true
+				// A song the fallback source served, as its badges say.
+				a.pl.SetStream(&netease.Stream{Level: "lossless", Type: "flac", Fallback: true})
+			case "picking":
+				pl := a.playlists[a.mine[1].ID]
+				a.route = route{page: pagePlaylist, id: pl.ID}
+				a.startPicking(pl.ID)
+				for _, i := range []int{1, 2, 4} {
+					a.pick.ids[pl.Tracks[i].ID] = true
+				}
+			case "manager":
+				a.route = route{page: pagePlaylist, id: a.mine[1].ID}
+				a.openManager(false)
+				a.manager.ids[a.mine[1].ID], a.manager.ids[a.mine[3].ID] = true, true
+			case "cover-picker":
+				a.route = route{page: pagePlaylist, id: a.mine[1].ID}
+				a.openCoverPicker(a.mine[1].ID)
+			case "sidebar":
+				a.customizing = true
+				a.settings.Sidebar = []sideItem{{ID: "home"}, {ID: "daily"}, {ID: "mine"}, {ID: "fm"}, {ID: "charts", Hidden: true}, {ID: "podcasts", Hidden: true}, {ID: "search"}, {ID: "saved"}}
 			case "stage":
 				a.nowPlaying, a.npPane = true, paneStage
 			case "queue":
@@ -51,14 +74,14 @@ func TestPressScreenshots(t *testing.T) {
 			tt.Advance(2 * time.Second)
 			tt.Frame()
 			img := tt.Image()
-			if scene == "settings" {
-				// The playback group, where the newest switches are.
-				from, ok := tt.Find("播放")
-				to, ok2 := tt.Find("缓存")
+			// The settings' groups the newest switches are in.
+			if from, to := map[string]string{"settings": "播放", "backup": "备份"}[scene], map[string]string{"settings": "缓存", "backup": "更新"}[scene]; from != "" {
+				f, ok := tt.Find(from)
+				e, ok2 := tt.Find(to)
 				if !ok || !ok2 {
-					t.Fatal("no playback group")
+					t.Fatalf("no %s group", from)
 				}
-				img = img.SubImage(image.Rect(0, int(from.Y-14), w, int(to.Y-10))).(*image.RGBA)
+				img = img.SubImage(image.Rect(0, int(f.Y-14), w, int(e.Y-10))).(*image.RGBA)
 			}
 			name := scene + "-light.png"
 			if dark {
@@ -106,6 +129,17 @@ func pressApp() *app {
 		}
 	}
 	a.daily = songs
+	// The listener's own playlists, the liked songs first, and those saved.
+	a.mine = []netease.Playlist{{ID: 200, Name: "Demo喜欢的音乐", SpecialType: 5, CoverURL: "press://cover/0", TrackCount: 8}}
+	for i, name := range []string{"通勤路上", "睡前听", "跑步歌单", "写作业"} {
+		a.mine = append(a.mine, netease.Playlist{ID: int64(201 + i), Name: name, CoverURL: fmt.Sprintf("press://cover/%d", (i+2)%8), TrackCount: 12 + i*7})
+	}
+	a.saved = []netease.Playlist{a.featured[0], a.featured[3]}
+	a.saved[0].Creator.Nickname, a.saved[1].Creator.Nickname = "晚风", "留灯的人"
+	a.playlists[201] = &netease.Playlist{ID: 201, Name: "通勤路上", CoverURL: "press://cover/2", Tracks: songs, Creator: a.featured[0].Creator}
+	a.playlists[201].Creator.Nickname = "Demo"
+	a.profile.UserID = 1
+	a.playlists[201].Creator.UserID = 1
 	a.pl.Cue(songs)
 	a.pl.SetLyrics(lyrics.Build("[00:00.00]晚风经过，灯一盏盏亮了\n[00:18.00]把没做完的事留给明天\n[00:36.00]今天就走到这里吧\n[00:54.00]慢一点，也能到家\n[01:12.00]耳机里还有一小段晴天\n[01:30.00]陪我沿着海岸走远", "", ""))
 	a.pl.Hold(40 * time.Second)
