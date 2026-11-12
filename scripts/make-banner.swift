@@ -121,7 +121,7 @@ for copy in copies {
         rgb(0xFFFFFF, 0.9).setStroke()
         let disc = NSBezierPath(ovalIn: sleeve.insetBy(dx: 14, dy: 14)); disc.lineWidth = 4; disc.stroke()
 
-        text("最美的期待", x: sleeve.maxX + 16, y: card.minY + 37, font: font(19, bold: true, chinese: true), color: ink)
+        text("给未来的自己", x: sleeve.maxX + 16, y: card.minY + 37, font: font(19, bold: true, chinese: true), color: ink)
         text("DuckEase Demo · 给自己一点时间", x: sleeve.maxX + 16, y: card.minY + 62, font: font(14, chinese: true), color: muted)
 
         // Divider, then the current lyric line.
