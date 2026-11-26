@@ -223,3 +223,23 @@ func TestEndRadio(t *testing.T) {
 		t.Error("asked the radio after leaving it")
 	}
 }
+
+// The shuffle button used to start every shuffle of a list on its first
+// song. It now starts on any song the listener may play, never a grey one.
+func TestShuffleStartsAnywhere(t *testing.T) {
+	tracks := make([]netease.Track, 10)
+	for i := range tracks {
+		tracks[i].ID = int64(i)
+	}
+	tracks[3].Fee = 1 // VIP, not granted without a privilege
+	starts := map[int]bool{}
+	for range 200 {
+		starts[randomPlayable(tracks)] = true
+	}
+	if starts[3] {
+		t.Error("started on a song the listener can't play")
+	}
+	if len(starts) < 5 {
+		t.Errorf("shuffles start on only %v", starts)
+	}
+}

@@ -423,10 +423,7 @@ func (a *app) playlistHeader(c *ui.Context, pl *netease.Playlist) {
 					a.pl.PlayQueue(tracks, firstPlayable(tracks))
 				}
 				if pillButton(c.Key("shuffle"), iconShuffle, "随机播放", p.hover.Over(p.bg), p.text).Clicked() {
-					if !a.pl.Shuffle() {
-						a.pl.ToggleShuffle()
-					}
-					a.pl.PlayQueue(pl.Tracks, firstPlayable(pl.Tracks))
+					a.pl.PlayShuffled(pl.Tracks)
 				}
 				if a.savable(pl) {
 					icon, label := iconPlus, "收藏"

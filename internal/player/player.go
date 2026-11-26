@@ -177,6 +177,31 @@ func (p *Player) PlayQueue(tracks []netease.Track, start int) {
 	p.load(start)
 }
 
+// PlayShuffled turns shuffle on and plays tracks starting on a random
+// playable one, so shuffling the same list doesn't always begin the same way.
+func (p *Player) PlayShuffled(tracks []netease.Track) {
+	if len(tracks) == 0 {
+		return
+	}
+	p.shuffle = true
+	p.PlayQueue(tracks, randomPlayable(tracks))
+}
+
+// randomPlayable picks one of tracks the listener may play, or any of
+// them when none is.
+func randomPlayable(tracks []netease.Track) int {
+	var playable []int
+	for i := range tracks {
+		if tracks[i].Playable() {
+			playable = append(playable, i)
+		}
+	}
+	if len(playable) == 0 {
+		return rand.IntN(len(tracks))
+	}
+	return playable[rand.IntN(len(playable))]
+}
+
 // PlayRadio plays tracks in their order, then goes on with those feed
 // gives as the queue nears its end, until something else is played. The
 // radio's name says which it is. feed calls got on the main thread.
