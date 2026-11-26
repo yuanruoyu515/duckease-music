@@ -153,7 +153,7 @@ The app checks this repository's releases at launch and once a day. When a newer
 
 | Requirement | Notes |
 |---|---|
-| Go **1.27.3 or newer** | The version required by `go.mod` |
+| Go **1.27.4 or newer** | The version required by `go.mod` |
 | macOS **13+**, for the Mac app | This fork's local build and packaging have been checked on Apple Silicon |
 | Xcode, for macOS packaging | Includes `actool`, needed for the app icon; Command Line Tools alone are insufficient |
 | Network access | Required to fetch dependencies and use the platform's services |

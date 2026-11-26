@@ -11,7 +11,7 @@ Ruoyu / SysNomad 的个人维护分支，公开仓库为 https://github.com/yuan
 ## 构建
 
 ```bash
-brew install go                # 需要 go.mod 里写的 Go 1.27.3
+brew install go                # 需要 go.mod 里写的 Go 1.27.4
 ./scripts/build-local.sh       # 先跑测试，再构建
 ```
 

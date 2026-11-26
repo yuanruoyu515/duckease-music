@@ -12,6 +12,6 @@ Ruoyu 的个人维护分支（fork 自 LeslieYon/mygo-cloudmusic，它是 egoist
 - Never commit secrets or files ignored by .gitignore.
 - Remote `upstream` is LeslieYon/mygo-cloudmusic (read-only reference). Remote `origin` is yuanruoyu515/duckease-music. Local `main` tracks `origin/main`; ordinary pull/push targets this public repository. The local-only `codex/pre-publication-history` branch preserves earlier development and removed website media; never push that backup or mirror all refs.
 
-## Build and test (verified 2026-11-08, Go 1.27.3 from Homebrew)
+## Build and test (verified 2026-11-25, Go 1.27.4 from Homebrew)
 - `CGO_ENABLED=0 go test ./internal/...`
 - `scripts/build-local.sh` — local macOS build, ad-hoc signed, no notarization, no upload.
