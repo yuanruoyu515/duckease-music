@@ -12,13 +12,13 @@ func TestStreamLive(t *testing.T) {
 	if os.Getenv("LIVE") == "" {
 		t.Skip()
 	}
-	st, err := netease.SongURL(2652820720, "exhigh")
+	st, err := netease.SongURL(1456890009, "exhigh")
 	if err != nil {
 		t.Fatal(err)
 	}
 	start := time.Now()
 	dl := startDownload(st.URL, st.Size, nil, nil)
-	s, err := openMP3Stream(dl, 278961)
+	s, err := openMP3Stream(dl, 243754)
 	if err != nil {
 		t.Fatal(err)
 	}

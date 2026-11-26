@@ -31,7 +31,7 @@ func TestSongURLEapiLive(t *testing.T) {
 	}
 	deviceOnce.Do(func() { deviceID = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123" })
 	var res map[string]any
-	err := eapiPost("/api/song/enhance/player/url/v1", map[string]any{"ids": "[2652820720]", "level": "exhigh", "encodeType": "mp3"}, &res)
+	err := eapiPost("/api/song/enhance/player/url/v1", map[string]any{"ids": "[1456890009]", "level": "exhigh", "encodeType": "mp3"}, &res)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -68,7 +68,7 @@ func TestPrivilegesLive(t *testing.T) {
 	if with == 0 || dailyWith == 0 {
 		t.Fatal("no privileges")
 	}
-	st, err := SongURL(2652820720, "exhigh")
+	st, err := SongURL(1456890009, "exhigh")
 	if err != nil || st.URL == "" || st.Size == 0 || st.Type != "mp3" {
 		t.Fatalf("stream %+v %v", st, err)
 	}
@@ -260,12 +260,19 @@ func TestProgramCommentsLive(t *testing.T) {
 		t.Fatalf("podcasts %+v, %v", res, err)
 	}
 	pod := &res.Podcasts[0]
-	programs, _, err := PodcastPrograms(pod.ID, 2, 0)
+	programs, _, err := PodcastPrograms(pod.ID, 10, 0)
 	if err != nil || len(programs) < 2 {
 		t.Fatalf("%d episodes, %v", len(programs), err)
 	}
-	tr := programs[0].Track(pod)
-	page, err := ThreadComments(tr.Thread(), 0, 5)
+	// The newest episode may have no comments yet: any of the ten will do.
+	var page *Comments
+	for i := range programs {
+		tr := programs[i].Track(pod)
+		page, err = ThreadComments(tr.Thread(), 0, 5)
+		if err != nil || page.Total > 0 {
+			break
+		}
+	}
 	if err != nil || page.Total == 0 || len(page.Latest) == 0 {
 		t.Fatalf("comments %+v, %v", page, err)
 	}
@@ -285,7 +292,7 @@ func TestFallbackURLLive(t *testing.T) {
 	if os.Getenv("LIVE") == "" {
 		t.Skip()
 	}
-	s, err := FallbackURL(2652820720, "exhigh")
+	s, err := FallbackURL(287398, "exhigh")
 	if err != nil {
 		t.Fatal(err)
 	}

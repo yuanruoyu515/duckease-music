@@ -90,7 +90,7 @@ LIVE=1 CGO_ENABLED=0 go test ./internal/netease/ -run Live -count=1 -v
 
 这组测试会真的请求网易云，哪个失败就是哪个接口出了问题。
 
-2026-11-08 的基线：除 `TestPrivilegesLive` 外全部通过。它失败是因为测试里的歌曲 `2652820720` 现在不登录就播不了，属于测试数据过期，接口没坏（`TestSongURLEapiLive` 能拿到播放地址）。`TestRecentPlaysLive`、`TestVIPSongPlayableLive` 需要设置 `NM_SESSION` 指向一份登录态，否则跳过。
+2026-11-25 的基线：全部通过。测试里用到的歌曲会过期：`TestPrivilegesLive`、`TestSongURLEapiLive` 和播放器的 `TestStreamLive` 需要一首不登录也能播的歌（现用 `1456890009`），`TestFallbackURLLive` 需要一首网易云不登录不给播、GD音乐台给播的 VIP 歌（现用 `287398`）。某个测试报「不能播」或「没有地址」时，先换一首歌再判断接口坏没坏。`TestRecentPlaysLive`、`TestVIPSongPlayableLive` 需要设置 `NM_SESSION` 指向一份登录态，否则跳过。
 
 ### 备用音源（GD音乐台）
 
