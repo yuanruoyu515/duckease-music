@@ -141,6 +141,7 @@ LIVE=1 CGO_ENABLED=0 go test ./internal/netease/ -run Live -count=1 -v
 
 - api-enhanced 的 [issue #300](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/issues/300)（2026-11-06）和我们遇到的情况一样：登录有效，搜索、歌词都正常，只有取歌曲地址返回 `-460`，提示「检测到您的网络环境存在风险，请稍后再试」。换 IP、重新登录、降音质都没用。提问的人推测，是短时间里大量并发请求（1.3 秒 30 多次歌词请求）触发的账号级标记，会持续很久。目前还没有官方回复。
 - api-enhanced 现在取歌曲地址（`module/song_url_v1.js`）已经不走我们用的 PC eapi，改走 xeapi（伪装成 Android 客户端，域名 `interface3.music.163.com`，带公钥和会话密钥）。xeapi 支持是 2026-05-29 加进去的（提交 `d0935f6`）。如果 eapi 取地址以后越来越常被拒，就移植 xeapi；不过 issue #300 用的就是 api-enhanced，照样被拒，所以 xeapi 也不保证管用。
+- Hydrogen-Music 0.2.6b（[`0fa209e`](https://github.com/jinghuashang/Hydrogen-Music/commit/0fa209e)，2026-11-12）撤回了强制 PC UA，理由是 UA 和客户端版本对不上更容易被风控；取地址遇到 `-460` 时改用 Web API（`/api/song/enhance/player/url`）兜底。本项目的 `eapiUA` 末尾是 `NeteaseMusicDesktop/3.1.17.204416`，和 `appver` 一致，不用改。Web API 兜底先不做：被风控时多发请求可能拉长封禁，现有的冷却加 GD音乐台已经够用。如果 `-460` 变得频繁、冷却后也取不到，再照这个提交加上，只试一次。
 - 由此得出的做法，本项目已经照着做了：被拒就冷却，不连续重试，同一首歌不重复请求，eapi 的 User-Agent 和请求头保持同一个客户端身份。以后加预加载、批量拉歌词这类功能时，要控制并发，别在一两秒里发出几十个请求。
 
 ## 要盯的外部变化（2026-11-10 整理）
