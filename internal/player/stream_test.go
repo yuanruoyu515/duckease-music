@@ -133,16 +133,13 @@ func TestFLACMetadataLength(t *testing.T) {
 		t.Fatal(err)
 	}
 	ref := decodeAll(t, b)
-	start, err := flacDataStart(downloaded(b))
-	if err != nil {
-		t.Fatal(err)
-	}
 	// The last block's header is no longer the last: a padding block of 6
 	// bytes follows it.
 	off := int64(4)
 	for b[off]&0x80 == 0 {
 		off += 4 + (int64(b[off+1])<<16 | int64(b[off+2])<<8 | int64(b[off+3]))
 	}
+	start := off + 4 + (int64(b[off+1])<<16 | int64(b[off+2])<<8 | int64(b[off+3]))
 	padded := append([]byte(nil), b[:start]...)
 	padded[off] &^= 0x80
 	padded = append(padded, 0x81, 0, 0, 6, 0, 0, 0, 0, 0, 0)
@@ -383,4 +380,36 @@ func TestSpectrumKeepsRecentChunks(t *testing.T) {
 	if !measured(back + 500*time.Millisecond) {
 		t.Error("what plays after a seek back isn't measured")
 	}
+}
+
+// A lossless song plays with only its start in, as it comes in, not once
+// all of it has: MyGo's FLAC decoder, which replaced ours, reads the file
+// through the download, and must not ask for the end before playing.
+func TestFLACComingIn(t *testing.T) {
+	b, err := os.ReadFile("testdata/seek.flac")
+	if err != nil {
+		t.Fatal(err)
+	}
+	dl := downloaded(b)
+	dl.n, dl.done = int64(len(b)/2), false
+	ok := make(chan error, 1)
+	go func() {
+		s, err := openStream(dl, 5000)
+		if err == nil {
+			_, err = s.Read(make([]float32, 4096))
+		}
+		ok <- err
+	}()
+	select {
+	case err := <-ok:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("waited for the rest of the song to play its start")
+	}
+	dl.mu.Lock()
+	dl.n, dl.done = int64(len(b)), true
+	dl.cond.Broadcast()
+	dl.mu.Unlock()
 }

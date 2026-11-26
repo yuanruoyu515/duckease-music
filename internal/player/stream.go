@@ -350,7 +350,7 @@ func openShared(dl *download, durationMs int64) (stream, error) {
 	switch s := s.(type) {
 	case *mp3Stream:
 		s.spec, s.drop = nil, dl.release
-	case *flacStream:
+	case *decodedStream:
 		s.spec, s.drop = nil, dl.release
 	}
 	return s, nil
