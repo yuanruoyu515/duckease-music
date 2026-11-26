@@ -157,8 +157,8 @@ LIVE=1 CGO_ENABLED=0 go test ./internal/netease/ -run Live -count=1 -v
 
 ### 值得跟上的
 
-1. **MyGo Music 的播放器修复。** 最值得移植的是 `ce1b2ea`（提前下载下一首，可以在没下完的歌里拖动进度）。其次是 `0927157`（频谱只留最后几秒）、`c360a84`（封面按显示尺寸下载、大图限额解码）、`b021067`（改用 MyGo 自带的 FLAC 解码，可能去掉 `mewkiz/flac`）、`aabab00`（随机播放从随机一首开始）。它已经在 MyGo 0.8 上，有些改动要先升 MyGo 才能搬。
-2. **MyGo 0.7 → 0.8。** 本项目固定在 `v0.7.1-0.20261027023711-da3657e7f86a`，上游已发 `v0.8.3`，MyGo Music 用 `v0.8.4` 预发布版。开分支升级，按「依赖」一节跑迁移和全部测试，参照 MyGo Music 升级时改过的地方。
+1. **MyGo Music 的播放器修复。** 最值得移植的是 `ce1b2ea`（提前下载下一首，可以在没下完的歌里拖动进度）。其次是 `0927157`（频谱只留最后几秒）、`c360a84`（封面按显示尺寸下载、大图限额解码）、`b021067`（改用 MyGo 自带的 FLAC 解码，可能去掉 `mewkiz/flac`）、`aabab00`（随机播放从随机一首开始）。MyGo Music 现在用 MyGo v0.9.0，本项目已升到 v0.10.0，这些改动不再受框架版本限制。
+2. **MyGo。** 2026-11-25 从 `v0.7.1-0.20261027023711-da3657e7f86a` 直接升到 `v0.10.0`：Go API 没有破坏性改动，`migrate-ui` 没有要改的地方，代码一行没动，全部测试通过。v0.9.0 删掉的 `sqlite.LibraryPath` 和 `MYGO_SQLITE_LIBRARY` 本项目没用到。以后每出一个小版本都按「依赖」一节升级，再回归菜单栏、弹层（下拉框、弹出面板）、Dock 图标和播放。
 3. **Go。** 1.27.x 的小版本基本每月一次，多是 `net/http`、`crypto/tls` 的安全修复，跟上即可：改 `go.mod` 的 `go` 行，`brew upgrade go`，跑测试。Go 1.28 预计 2027 年 2 月，等 MyGo 支持了再升。`golang.org/x/text`、`x/image` 等依赖用 `govulncheck ./...` 定期扫。
 
 ### 节奏
@@ -166,7 +166,7 @@ LIVE=1 CGO_ENABLED=0 go test ./internal/netease/ -run Live -count=1 -v
 - 每次发版前：`LIVE=1` 接口测试（含 `FallbackURLLive`）；看 MyGo Music 最近改了 `internal/player`、`internal/lyrics` 的什么；看 api-enhanced 最新 issue。
 - 每月：Go 小版本、`govulncheck`。
 - 出播放问题：先看日志，再去 MyGo Music 找修复，再看 api-enhanced、AlgerMusicPlayer。
-- 找时机做一次大的：升 MyGo 0.8，顺带移植提前下载下一首。
+- 找时机做一次大的：移植提前下载下一首（`ce1b2ea`）。
 
 ## 风险提醒
 
