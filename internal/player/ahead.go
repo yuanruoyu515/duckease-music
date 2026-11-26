@@ -1,0 +1,115 @@
+package player
+
+import (
+	"time"
+
+	"netease-music-mygo/internal/netease"
+)
+
+// The next track's audio is asked for once the current one has played a
+// while, and comes in meanwhile, so that it starts at once when its turn
+// comes, and the listener can seek in it at once. Ported from MyGo Music
+// ce1b2ea, with NetEase's risk control in mind: one request ahead, never
+// retried, never to the fallback source, whose quota is for songs that
+// play, and none while songs are not asked for after a -460. The wait of
+// aheadAfter keeps a listener skipping through songs from asking for two
+// at each.
+
+// aheadAfter is how long the current track plays before the next one is
+// asked for.
+const aheadAfter = 10 * time.Second
+
+// ahead is a track's audio asked for before its turn.
+type ahead struct {
+	id    int64
+	level string
+	done  chan struct{} // closed once info, dl and err are in
+	info  *netease.Stream
+	dl    *download
+	err   error
+}
+
+func (a *ahead) is(t netease.Track, level string) bool {
+	return a.id == t.ID && a.level == level
+}
+
+// upNext is the track that plays when the current one ends, if one does by
+// itself: not a radio's next, which its feed may not have given yet.
+func (p *Player) upNext() (netease.Track, bool) {
+	if p.at < 0 || p.at >= len(p.order) || p.repeat == RepeatOne {
+		return netease.Track{}, false
+	}
+	at := p.at + 1
+	if at >= len(p.order) {
+		if p.repeat != RepeatAll || p.feed != nil {
+			return netease.Track{}, false
+		}
+		at = 0
+	}
+	if at == p.at {
+		return netease.Track{}, false
+	}
+	return p.queue[p.order[at]], true
+}
+
+// getAhead asks NetEase for the next track's audio at level, unless it's
+// kept already, greyed out, or songs are not being asked for. What was
+// asked for before that isn't next any more is let go.
+func (p *Player) getAhead(level string) {
+	t, ok := p.upNext()
+	if a := p.ahead; a != nil {
+		if ok && a.is(t, level) {
+			return
+		}
+		p.dropAhead()
+	}
+	if !ok || !t.Granted() || time.Now().UnixNano() < p.blockedUntil.Load() || p.Cache.has(t.ID, level) {
+		return
+	}
+	a := &ahead{id: t.ID, level: level, done: make(chan struct{})}
+	p.ahead = a
+	find := songURL
+	go func() {
+		defer close(a.done)
+		info, err := find(t.ID, level)
+		if err != nil {
+			a.err = err
+			if blocked(err) {
+				p.blockedUntil.Store(time.Now().Add(blockCooldown).UnixNano())
+			}
+			return
+		}
+		a.info = info
+		a.dl = p.Cache.download(t.ID, info)
+	}()
+}
+
+// takeAhead returns what was asked for ahead of t at level, if it was, for
+// the caller to open or close.
+func (p *Player) takeAhead(t netease.Track, level string) *ahead {
+	a := p.ahead
+	if a == nil || !a.is(t, level) {
+		return nil
+	}
+	p.ahead = nil
+	return a
+}
+
+// dropAhead lets go of what was asked for ahead, stopping it if it's still
+// coming in. What has all come in stays in the cache.
+func (p *Player) dropAhead() {
+	a := p.ahead
+	p.ahead = nil
+	if a == nil {
+		return
+	}
+	go a.close()
+}
+
+// close stops what was asked for ahead once it's in, if it's still coming in.
+func (a *ahead) close() {
+	<-a.done
+	if a.dl != nil {
+		a.dl.Close()
+	}
+}

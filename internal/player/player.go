@@ -56,6 +56,7 @@ type Player struct {
 	track   *netease.Track
 	out     *audio.Player
 	stream  stream
+	watch   *watched        // stream, as out plays it
 	info    *netease.Stream // what the current track streams
 	fade    fader
 	gain    float64 // the current track's normalizing gain
@@ -79,6 +80,8 @@ type Player struct {
 	seeking bool
 	seekTo  time.Duration
 	seekGen int
+
+	ahead *ahead // the next track's audio, asked for before its turn
 }
 
 func New(post func(func())) *Player {
@@ -356,7 +359,11 @@ func (p *Player) Queue() []netease.Track { return p.queue }
 func (p *Player) Playing() bool { return p.playing }
 
 // Loading reports whether the current track is still loading.
-func (p *Player) Loading() bool { return p.loading || p.awaiting }
+// It is too while it waits for the next of its bytes, after a seek past
+// what has come in, or on a network slower than the song.
+func (p *Player) Loading() bool {
+	return p.loading || p.awaiting || p.watch != nil && p.watch.starved()
+}
 
 // Ready reports whether the current track has loaded, to play.
 func (p *Player) Ready() bool { return p.out != nil }
@@ -503,6 +510,8 @@ func (p *Player) Seek(t time.Duration) {
 		return
 	}
 	out := p.out
+	// One past what has come in waits for it: a frame once that would show.
+	time.AfterFunc(seekGap+starvedAfter+20*time.Millisecond, func() { p.post(func() {}) })
 	// Paused, it jumps at once; but a seek on its way paused it only for
 	// the jump, and this one takes its place, playing on from there.
 	if !out.Playing() && !p.seeking {
@@ -596,7 +605,7 @@ func (p *Player) stop() {
 		out.Pause()
 		time.AfterFunc(100*time.Millisecond, out.Close)
 	}
-	p.out, p.stream, p.info = nil, nil, nil
+	p.out, p.stream, p.watch, p.info = nil, nil, nil, nil
 	p.seeking = false
 	p.fade.attach(nil, 1)
 }
@@ -658,12 +667,16 @@ func (p *Player) loadSkipping(at, skipped int, play bool, from time.Duration) {
 			}
 		})
 	}()
+	level := "exhigh"
+	if p.Quality != nil {
+		level = p.Quality()
+	}
+	pre := p.takeAhead(t, level)
 	go func() {
-		level := "exhigh"
-		if p.Quality != nil {
-			level = p.Quality()
+		info, s, err := openAhead(pre, t)
+		if s == nil {
+			info, s, err = p.openAny(t, level, gen)
 		}
-		info, s, err := p.openAny(t, level, gen)
 		p.post(func() {
 			if gen != p.gen {
 				if s != nil {
@@ -706,13 +719,14 @@ func (p *Player) loadSkipping(at, skipped int, play bool, from time.Duration) {
 			}
 			p.stream, p.info = s, info
 			p.gain = normGain(info)
-			p.out = audio.NewPlayer(s)
+			p.watch = &watched{stream: s, now: time.Now, ended: func() { p.post(func() {}) }}
+			p.out = audio.NewPlayer(p.watch)
 			// From its middle, as a session picked up again, it fades in.
-			level := 1.0
+			vol := 1.0
 			if p.pending > 0 {
-				level = 0
+				vol = 0
 			}
-			p.fade.attach(p.out, level)
+			p.fade.attach(p.out, vol)
 			p.applyGain()
 			p.out.OnEnd(func() {
 				p.post(func() {
@@ -730,8 +744,34 @@ func (p *Player) loadSkipping(at, skipped int, play bool, from time.Duration) {
 				p.fade.fade(1, fadeIn, nil)
 			}
 			p.sync()
+			time.AfterFunc(aheadAfter, func() {
+				p.post(func() {
+					if gen == p.gen && p.out != nil {
+						p.getAhead(level)
+					}
+				})
+			})
 		})
 	}()
+}
+
+// openAhead opens what was asked for ahead of t, if it was and that worked;
+// it returns no stream otherwise, for t to be asked for again: a failure
+// ahead may have been a moment's.
+func openAhead(pre *ahead, t netease.Track) (*netease.Stream, stream, error) {
+	if pre == nil {
+		return nil, nil, nil
+	}
+	<-pre.done
+	if pre.err != nil {
+		return nil, nil, nil
+	}
+	s, err := openStream(pre.dl, t.Duration)
+	if err != nil {
+		pre.dl.Close()
+		return nil, nil, nil
+	}
+	return pre.info, s, nil
 }
 
 // blockCooldown is how long songs are not asked for once NetEase's risk

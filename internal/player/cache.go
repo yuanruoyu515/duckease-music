@@ -81,6 +81,15 @@ func (c *Cache) lookup(id int64, level string) (*download, *netease.Stream, bool
 
 // download fetches the song of the stream st into a file, to keep once it
 // has all come in; or into memory, if the cache would not keep it.
+// has reports whether a song is kept at level or a better one.
+func (c *Cache) has(id int64, level string) bool {
+	dl, _, ok := c.lookup(id, level)
+	if ok {
+		dl.Close()
+	}
+	return ok
+}
+
 func (c *Cache) download(id int64, st *netease.Stream) *download {
 	part := c.part(st)
 	if part == nil {
