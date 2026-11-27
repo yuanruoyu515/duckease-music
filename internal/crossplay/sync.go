@@ -35,8 +35,8 @@ type Report struct {
 	// Refused is how many songs NetEase turned away, as some it says the
 	// playlist has.
 	Refused int
-	// Truncated says the NetEase playlist has more than the 1000 songs a
-	// sync can read, whose rest didn't go to Spotify.
+	// Truncated says the NetEase playlist has more than the
+	// netease.MaxTracks songs a sync can read, whose rest didn't go to Spotify.
 	Truncated bool
 }
 
@@ -72,8 +72,7 @@ func Sync(l Link, b Budget, progress Progress) (Report, error) {
 	if err != nil {
 		return r, err
 	}
-	// All its songs, by id: those past the first 1000 too, which aren't
-	// read in full; NetEase turns a whole request away for one song the
+	// All its songs, by id, those whose details didn't load too; NetEase turns a whole request away for one song the
 	// playlist has.
 	onNetease := map[int64]bool{}
 	for _, t := range ne.TrackIDs {
@@ -82,7 +81,7 @@ func Sync(l Link, b Budget, progress Progress) (Report, error) {
 	for _, t := range ne.Tracks {
 		onNetease[t.ID] = true
 	}
-	r.Truncated = len(ne.Tracks) >= 1000 && len(ne.TrackIDs) > len(ne.Tracks)
+	r.Truncated = len(ne.Tracks) >= netease.MaxTracks && len(ne.TrackIDs) > len(ne.Tracks)
 	onSpotify := map[string]bool{}
 	for _, t := range sp {
 		onSpotify[t.URI] = true

@@ -284,7 +284,12 @@ func Charts() ([]Playlist, error) {
 	return out, nil
 }
 
-// PlaylistDetail returns a playlist with up to 1000 of its tracks.
+// MaxTracks is the most songs of a playlist PlaylistDetail reads in full,
+// past the first 1000 the playlist's own reply holds: those after come
+// as ids, read 400 a request.
+const MaxTracks = 10000
+
+// PlaylistDetail returns a playlist with up to MaxTracks of its tracks.
 func PlaylistDetail(id int64) (*Playlist, error) {
 	var res struct {
 		Playlist   Playlist    `json:"playlist"`
@@ -302,7 +307,7 @@ func PlaylistDetail(id int64) (*Playlist, error) {
 	// Long playlists list only their first tracks in full: the rest by id.
 	if len(p.Tracks) < len(p.TrackIDs) {
 		var ids []int64
-		for _, t := range p.TrackIDs[len(p.Tracks):min(len(p.TrackIDs), 1000)] {
+		for _, t := range p.TrackIDs[len(p.Tracks):min(len(p.TrackIDs), MaxTracks)] {
 			ids = append(ids, t.ID)
 		}
 		more, err := SongDetails(ids)

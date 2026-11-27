@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"netease-music-mygo/internal/crossplay"
+	"netease-music-mygo/internal/netease"
 	"netease-music-mygo/internal/spotify"
 )
 
@@ -221,7 +222,7 @@ func report(r crossplay.Report) string {
 		fmt.Fprintf(&b, "NetEase turned away %d songs as already in the playlist\n", r.Refused)
 	}
 	if r.Truncated {
-		b.WriteString("the NetEase playlist has over 1000 songs; only the first 1000 were read\n")
+		b.WriteString(fmt.Sprintf("the NetEase playlist has over %d songs; only the first %d were read\n", netease.MaxTracks, netease.MaxTracks))
 	}
 	if len(r.MissingOnNetease) > 0 {
 		fmt.Fprintf(&b, "not found on NetEase (%d):\n%s\n", len(r.MissingOnNetease), listSome(r.MissingOnNetease))

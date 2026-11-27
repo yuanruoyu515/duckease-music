@@ -139,7 +139,7 @@ func neteaseTools() []tool {
 		},
 		{
 			name: "playlist", title: "Read a playlist", readOnly: true,
-			description: "Songs of a playlist, in order (first 1000 at most). Pass query to get only songs whose title, artist or album contains it.",
+			description: "Songs of a playlist, in order. Pass query to get only songs whose title, artist or album contains it.",
 			params: map[string]any{
 				"id":     playlistArg,
 				"query":  strParam("optional filter, case-insensitive"),
@@ -415,7 +415,7 @@ func readPlaylist(args json.RawMessage) (string, error) {
 	if from > 0 || to < total {
 		fmt.Fprintf(&b, ", showing %d-%d", from+1, to)
 	}
-	if len(pl.Tracks) >= 1000 && pl.TrackCount > len(pl.Tracks) {
+	if len(pl.Tracks) >= netease.MaxTracks && pl.TrackCount > len(pl.Tracks) {
 		fmt.Fprintf(&b, " (only the first %d can be read)", len(pl.Tracks))
 	}
 	b.WriteString("\nid\ttitle\tartists\talbum\tlength\n")
@@ -562,7 +562,7 @@ func fresh(pid int64, songs []int64) ([]int64, error) {
 	if err != nil {
 		return nil, err
 	}
-	// All its songs, past the first 1000 too, by id: NetEase turns a
+	// All its songs by id, those whose details didn't load too: NetEase turns a
 	// whole request away for one song the playlist has.
 	has := map[int64]bool{}
 	for _, t := range pl.TrackIDs {
