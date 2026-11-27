@@ -145,7 +145,7 @@ func neteaseTools() []tool {
 		},
 		{
 			name: "duplicates", title: "Find duplicate songs", readOnly: true,
-			description: "Songs of a playlist that appear more than once, by id or by the same title and artist. Lines: id, title, artists; groups split by blank lines, the first of each group is the one listed first.",
+			description: "Songs of a playlist that appear more than once, by id or by the same title (versions such as Live count apart) and first artist. Lines: id, title, artists; groups split by blank lines, the first of each group is the one listed first.",
 			params:      map[string]any{"id": playlistArg},
 			required:    []string{"id"},
 			run:         duplicates,
@@ -380,7 +380,7 @@ func readPlaylist(args json.RawMessage) (string, error) {
 	if from > 0 || to < total {
 		fmt.Fprintf(&b, ", showing %d-%d", from+1, to)
 	}
-	if pl.TrackCount > len(pl.Tracks) && q == "" {
+	if pl.TrackCount > len(pl.Tracks) {
 		fmt.Fprintf(&b, " (only the first %d can be read)", len(pl.Tracks))
 	}
 	b.WriteString("\nid\ttitle\tartists\talbum\tlength\n")
@@ -475,7 +475,8 @@ func duplicates(args json.RawMessage) (string, error) {
 		if len(t.Artists) > 0 {
 			artist = match.Clean(t.Artists[0].Name)
 		}
-		key := match.Title(t.Name) + "\x00" + artist
+		// The whole title, versions too: a live take isn't a duplicate.
+		key := match.Clean(t.Name) + "\x00" + artist
 		if _, ok := groups[key]; !ok {
 			order = append(order, key)
 		}

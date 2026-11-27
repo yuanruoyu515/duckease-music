@@ -114,3 +114,21 @@ func TestServeProtocol(t *testing.T) {
 		t.Errorf("replies:\n%s", out.String())
 	}
 }
+
+// A live take isn't a duplicate of the studio song, but the same song
+// with the artist spelled "S H E" or "S.H.E" is.
+func TestDuplicatesKeepVersionsApart(t *testing.T) {
+	fake(t)
+	playlistDetail = func(id int64) (*netease.Playlist, error) {
+		return &netease.Playlist{ID: id, Tracks: []netease.Track{
+			{ID: 1, Name: "迫不及待", Artists: []netease.Artist{{Name: "S H E"}}},
+			{ID: 2, Name: "迫不及待", Artists: []netease.Artist{{Name: "S.H.E"}}},
+			{ID: 3, Name: "十面埋伏", Artists: []netease.Artist{{Name: "S.H.E"}}},
+			{ID: 4, Name: "十面埋伏(Live)", Artists: []netease.Artist{{Name: "S.H.E"}}},
+		}}, nil
+	}
+	text, _ := callTool(t, "duplicates", map[string]any{"id": 1})
+	if !strings.HasPrefix(text, "1 groups") || strings.Contains(text, "十面埋伏") {
+		t.Errorf("got:\n%s", text)
+	}
+}
