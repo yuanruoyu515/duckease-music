@@ -71,6 +71,7 @@ func (a *app) view(c *ui.Context) {
 	a.sidebarEditor(c)
 	a.managerView(c)
 	a.coverPickerView(c)
+	a.spotDialogs(c)
 	a.confirmView(c)
 	a.agentsView(c)
 	if a.toast != "" {
@@ -144,7 +145,7 @@ func (a *app) load(r route) {
 	case pagePodcasts:
 		a.loadPodcastTab()
 	case pageSpotify:
-		a.loadSpotPage(r.query, false)
+		a.loadSpotPage(r.query)
 	}
 }
 

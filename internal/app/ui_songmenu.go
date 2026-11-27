@@ -56,6 +56,7 @@ func (a *app) songItems(tr *netease.Track, pid int64) func(m *ui.Menu) {
 			a.openPage(route{page: pageAlbum, id: tr.Album.ID})
 		}
 		a.playlistItems(m, tr, pid)
+		a.spotSongItems(m, tr)
 	}
 }
 

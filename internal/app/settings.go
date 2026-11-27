@@ -61,6 +61,9 @@ type settings struct {
 	// Sidebar is the order of the sidebar's sections, and those hidden
 	// (sideItem); nil for the first order, all shown.
 	Sidebar []sideItem `json:"sidebar,omitempty"`
+	// SpotifyHidden are the Spotify playlists, by id ("liked" for Liked
+	// Songs), the listener chose not to show in the sidebar.
+	SpotifyHidden []string `json:"spotifyHidden,omitempty"`
 	// HideSideNowPlaying hides the card of the song playing at the foot of
 	// the sidebar.
 	HideSideNowPlaying bool `json:"hideSideNowPlaying,omitempty"`

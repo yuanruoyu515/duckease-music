@@ -414,17 +414,17 @@ func NeteaseIDs(tracks []spotify.Track, b Budget) ([]int64, error) {
 }
 
 // KnownNeteaseIDs returns the NetEase ids of the Spotify tracks found
-// before, 0 for the others, without searching: unknown counts those not
+// before, 0 for the others, without searching: unknown marks those not
 // looked for yet, or due to be looked for again.
-func KnownNeteaseIDs(tracks []spotify.Track) (ids []int64, unknown int) {
+func KnownNeteaseIDs(tracks []spotify.Track) (ids []int64, unknown []bool) {
 	mu.Lock()
 	defer mu.Unlock()
 	s := load()
-	ids = make([]int64, len(tracks))
+	ids, unknown = make([]int64, len(tracks)), make([]bool, len(tracks))
 	for i := range tracks {
 		f, ok := known(s.ToNetease, tracks[i].ID)
 		if !ok {
-			unknown++
+			unknown[i] = true
 			continue
 		}
 		ids[i] = atoi(f.ID)

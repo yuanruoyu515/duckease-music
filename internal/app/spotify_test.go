@@ -1,10 +1,13 @@
 package app
 
 import (
+	"fmt"
 	"image/png"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/egoist/mygo/ui"
 
@@ -24,7 +27,8 @@ func spotApp() *app {
 	a.spot.pages = map[string]*spotPage{"S": {
 		tracks:  make([]spotify.Track, 3),
 		matched: []netease.Track{{ID: 11, Name: "One"}, {ID: 12, Name: "Two"}},
-		missing: []spotify.Track{{Name: "Three"}},
+		from:    []string{"spotify:track:a", "spotify:track:b"},
+		missing: []spotify.Track{{ID: "c", URI: "spotify:track:c", Name: "Three"}},
 	}}
 	return a
 }
@@ -65,8 +69,9 @@ func TestSpotifyPlaylistPlaysMatches(t *testing.T) {
 	}
 }
 
-// Copying to NetEase starts an import of the playlist, once however often
-// it is clicked while it runs.
+// Copying to NetEase asks for the new playlist's name, the Spotify one's
+// to start with, and imports under the name typed, once however often it
+// is asked while it runs.
 func TestSpotifyImportOnce(t *testing.T) {
 	asked := make(chan string, 2)
 	done := make(chan struct{})
@@ -81,25 +86,81 @@ func TestSpotifyImportOnce(t *testing.T) {
 	a.route = route{page: pageSpotify, query: "S"}
 	tt := ui.NewTester(a.view, 1200, 800)
 	tt.Frame()
-	for range 2 {
-		if err := tt.Click("复制到网易云"); err != nil {
-			t.Fatal(err)
-		}
-		tt.Frame()
+	if err := tt.Click("复制到网易云"); err != nil {
+		t.Fatal(err)
 	}
-	if got := wait(t, asked, "the import"); got != "S Road Trip" {
+	tt.Frame()
+	if d := a.spot.importing; !d.open || d.name != "Road Trip" {
+		t.Fatalf("the dialog is %+v", d)
+	}
+	a.spot.importing.name = "公路旅行"
+	if err := tt.Click("复制"); err != nil {
+		t.Fatal(err)
+	}
+	tt.Frame()
+	if got := wait(t, asked, "the import"); got != "S 公路旅行" {
 		t.Errorf("imported %q", got)
 	}
+	a.openSpotImport("S", "Road Trip", false)
+	a.submitSpotImport()
 	select {
 	case got := <-asked:
 		t.Errorf("imported again: %q", got)
-	default:
+	case <-time.After(50 * time.Millisecond):
 	}
 }
 
-// Leaving a Spotify playlist's page lets finding its songs go on, and
-// coming back shows how far it got, without starting it again.
-func TestLeavingSpotifyPageKeepsMatching(t *testing.T) {
+// Linking with a playlist the listener has syncs into it, only to
+// NetEase unless they ask for both ways.
+func TestSpotifyLinkExisting(t *testing.T) {
+	asked := make(chan string, 1)
+	link := crossLink
+	defer func() { crossLink = link }()
+	crossLink = func(sp string, ne int64, name string, d crossplay.Direction, _ crossplay.Budget, _ crossplay.Progress) (crossplay.Link, crossplay.Report, error) {
+		asked <- fmt.Sprintf("%s %d %s", sp, ne, d)
+		return crossplay.Link{}, crossplay.Report{}, nil
+	}
+	a := spotApp()
+	a.mine = []netease.Playlist{{ID: 5, Name: "我喜欢的音乐", SpecialType: 5}, {ID: 7, Name: "公路"}}
+	a.openSpotImport("S", "Road Trip", true)
+	a.spot.importing.target = "公路"
+	a.submitSpotImport()
+	if got := wait(t, asked, "the link"); got != "S 7 to-netease" {
+		t.Errorf("linked %q", got)
+	}
+	a.spot.busy = nil
+	a.openSpotImport("S", "Road Trip", true)
+	a.spot.importing.target, a.spot.importing.both = "我喜欢的音乐", true
+	a.submitSpotImport()
+	if got := wait(t, asked, "the link both ways"); got != "S 5 both" {
+		t.Errorf("linked %q", got)
+	}
+}
+
+// A Spotify playlist's page opens as it was kept, reading nothing off
+// Spotify and searching NetEase for nothing.
+func TestSpotifyPageOpensAsKept(t *testing.T) {
+	items, find, read := spotifyItems, neteaseIDsOf, readSpotCache
+	defer func() { spotifyItems, neteaseIDsOf, readSpotCache = items, find, read }()
+	a := spotApp()
+	kept := make(chan string, 1)
+	readSpotCache = func(id string) (spotCache, bool) { kept <- id; return spotCache{Tracks: make([]spotify.Track, 2)}, true }
+	asked := make(chan string, 2)
+	spotifyItems = func(id string) ([]spotify.Track, error) { asked <- "spotify"; return nil, nil }
+	neteaseIDsOf = func([]spotify.Track, crossplay.Budget) ([]int64, error) { asked <- "netease"; return nil, nil }
+	a.spot.pages = nil
+	a.open(route{page: pageSpotify, query: "S"})
+	wait(t, kept, "the kept page")
+	select {
+	case got := <-asked:
+		t.Errorf("opening asked %s", got)
+	case <-time.After(50 * time.Millisecond):
+	}
+}
+
+// Update looks for the songs on NetEase; leaving the page lets it go on,
+// and coming back or pressing it again doesn't start it again.
+func TestSpotifyUpdateMatchesOnce(t *testing.T) {
 	items, find := spotifyItems, neteaseIDsOf
 	defer func() { spotifyItems, neteaseIDsOf = items, find }()
 	spotifyItems = func(string) ([]spotify.Track, error) { return make([]spotify.Track, 3), nil }
@@ -111,22 +172,70 @@ func TestLeavingSpotifyPageKeepsMatching(t *testing.T) {
 	}
 	defer close(release)
 	a := spotApp()
-	a.spot.pages = nil
+	a.route = route{page: pageSpotify, query: "S"}
 	tt := ui.NewTester(a.view, 1200, 800)
 	tt.Frame()
-	if err := tt.Click("Road Trip"); err != nil {
+	if err := tt.Click("更新"); err != nil {
 		t.Fatal(err)
 	}
 	wait(t, started, "the matching")
 	a.open(route{page: pageHome})
 	a.open(route{page: pageSpotify, query: "S"})
+	a.updateSpotPage("S")
 	select {
 	case <-started:
-		t.Error("coming back started the matching again")
-	default:
+		t.Error("the matching started again")
+	case <-time.After(50 * time.Millisecond):
 	}
-	if pg := a.spot.pages["S"]; pg == nil || !pg.loading {
-		t.Errorf("the page's matching was dropped: %+v", pg)
+	if pg := a.spot.pages["S"]; pg == nil || !pg.matching || len(pg.matched) != 2 {
+		t.Errorf("the page's matching was dropped, or what it showed: %+v", pg)
+	}
+}
+
+// A song's menu on a Spotify playlist's page takes it out of the
+// playlist, at once on the page and then on Spotify.
+func TestSpotifyRemoveSong(t *testing.T) {
+	removed := make(chan string, 1)
+	rm := spotifyRemove
+	defer func() { spotifyRemove = rm }()
+	spotifyRemove = func(id string, uris []string) error { removed <- id + " " + strings.Join(uris, ","); return nil }
+	a := spotApp()
+	a.route = route{page: pageSpotify, query: "S"}
+	tt := ui.NewTester(a.view, 1200, 800)
+	tt.Frame()
+	if err := tt.RightClick("One"); err != nil {
+		t.Fatal(err)
+	}
+	if err := tt.ChooseMenuItem("从这个 Spotify 歌单移除"); err != nil {
+		t.Fatalf("%v; the menu shows %q", err, tt.Menu())
+	}
+	tt.Frame()
+	if got := wait(t, removed, "the removal"); got != "S spotify:track:a" {
+		t.Errorf("removed %q", got)
+	}
+	if pg := a.spot.pages["S"]; len(pg.matched) != 1 || pg.matched[0].ID != 12 || pg.from[0] != "spotify:track:b" {
+		t.Errorf("the page shows %v %v", pg.matched, pg.from)
+	}
+}
+
+// Unticking a playlist in the chooser hides it from the sidebar.
+func TestSpotifyChooserHides(t *testing.T) {
+	a := spotApp()
+	a.openSpotChooser()
+	tt := ui.NewTester(a.view, 1200, 800)
+	tt.Frame()
+	if err := tt.Click("Road Trip"); err != nil {
+		t.Fatal(err)
+	}
+	tt.Frame()
+	tt.Frame()
+	if !a.spotHidden("S") {
+		t.Fatalf("hidden %v", a.settings.SpotifyHidden)
+	}
+	a.spot.choosing.open = false
+	tt.Frame()
+	if err := tt.Click("Road Trip"); err == nil {
+		t.Error("the hidden playlist is still in the sidebar")
 	}
 }
 
@@ -143,7 +252,7 @@ func TestSpotifyLoadingFrames(t *testing.T) {
 			a.settings.Appearance = "dark"
 		}
 		a.route = route{page: pageSpotify, query: "S"}
-		a.spot.pages = map[string]*spotPage{"S": {loading: true, done: 412, total: 1302}}
+		a.spot.pages = map[string]*spotPage{"S": {loading: true, matching: true, done: 412, total: 1302}}
 		tt := ui.NewTester(a.view, 1200, 800)
 		tt.SetDark(dark)
 		for range 30 {

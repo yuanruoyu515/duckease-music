@@ -15,5 +15,10 @@ func newTestApp() *app {
 	a.art = newArtCache(func(func()) {})
 	a.pl = player.New(func(func()) {})
 	a.pl.SetVolume(0.5)
+	a.spot.liked = -1
+	// Pages of Spotify playlists aren't kept on disk in tests.
+	readSpotCache = func(string) (spotCache, bool) { return spotCache{}, false }
+	writeSpotCache = func(string, spotCache) {}
+	removeSpotCache = func(string) {}
 	return a
 }

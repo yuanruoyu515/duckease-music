@@ -90,7 +90,7 @@ func TestPressScreenshots(t *testing.T) {
 			case "spotify-matching":
 				pressSpotify(a)
 				a.route = route{page: pageSpotify, query: "sp-rain"}
-				a.spot.pages["sp-rain"] = &spotPage{loading: true, done: 412, total: 1302}
+				a.spot.pages["sp-rain"] = &spotPage{loading: true, matching: true, done: 412, total: 1302}
 			}
 			tt := ui.NewTester(view, w, h)
 			tt.SetDark(dark)
