@@ -301,6 +301,10 @@ func (a *app) accountMenu(c *ui.Context, row ui.Element) {
 			a.accountOpen = false
 			a.openSettings()
 		}
+		if a.menuItem(c, iconSliders, "连接 AI Agent…", "").Clicked() {
+			a.accountOpen = false
+			a.openAgents()
+		}
 		ui.Box(c).Height(0.5).Margin(4, 8).Background(pop.edge)
 		if a.menuItem(c, iconSignOut, "退出登录", "").Clicked() {
 			a.accountOpen = false

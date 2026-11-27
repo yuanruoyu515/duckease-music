@@ -72,6 +72,7 @@ func (a *app) view(c *ui.Context) {
 	a.managerView(c)
 	a.coverPickerView(c)
 	a.confirmView(c)
+	a.agentsView(c)
 	if a.toast != "" {
 		c.Toast(a.toast)
 		a.toast = ""

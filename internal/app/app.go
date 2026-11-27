@@ -47,7 +47,8 @@ type app struct {
 	pl   *player.Player
 	pal  palette
 
-	spot spotState // Spotify (spotify.go)
+	spot   spotState   // Spotify (spotify.go)
+	agents agentsState // the dialog connecting AI agents (agents.go)
 
 	route   route
 	history []route

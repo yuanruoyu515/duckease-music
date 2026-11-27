@@ -6,6 +6,10 @@ DuckEase Music 自带一个 MCP 服务器。Codex、Claude Code 这类 agent 接
 
 ## 接上
 
+最简单的办法：在 app 左下角点头像，选「连接 AI Agent…」。Codex、Claude Code、Claude Desktop、Cursor 都可以一键接入或移除，也能复制对应的配置自己加；别的 AI 工具点「复制给 Agent 的话」，粘贴给它，让它自己接。一键接入只会加上或替换名为 `duckease` 的那一项，其他设置不动，改之前会在旁边存一份 `.duckease-backup`。
+
+想手动配置的话：
+
 Codex，写进 `~/.codex/config.toml`：
 
 ```toml
