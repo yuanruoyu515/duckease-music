@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"netease-music-mygo/internal/crossplay"
 	"netease-music-mygo/internal/match"
 	"netease-music-mygo/internal/netease"
 )
@@ -101,6 +102,10 @@ var (
 )
 
 func newTools() []tool {
+	return append(neteaseTools(), spotifyTools()...)
+}
+
+func neteaseTools() []tool {
 	return []tool{
 		{
 			name: "playlists", title: "List playlists", readOnly: true,
@@ -414,36 +419,6 @@ func search(args json.RawMessage) (string, error) {
 	return b.String(), nil
 }
 
-func asSong(t *netease.Track) match.Song {
-	s := match.Song{Title: t.Name, Length: t.Length()}
-	for _, a := range t.Artists {
-		s.Artists = append(s.Artists, a.Name)
-	}
-	return s
-}
-
-// Find returns the NetEase song most like want, and how alike, or nil.
-// Spotify's import uses it too.
-func Find(want match.Song) (*netease.Track, float64, error) {
-	q := want.Title
-	if len(want.Artists) > 0 {
-		q += " " + want.Artists[0]
-	}
-	songs, err := searchSongs(q, 8)
-	if err != nil {
-		return nil, 0, err
-	}
-	cands := make([]match.Song, len(songs))
-	for i := range songs {
-		cands[i] = asSong(&songs[i])
-	}
-	i, score := match.Best(want, cands)
-	if i < 0 {
-		return nil, score, nil
-	}
-	return &songs[i], score, nil
-}
-
 func matchSongs(args json.RawMessage) (string, error) {
 	var a struct {
 		Songs []string `json:"songs"`
@@ -461,7 +436,7 @@ func matchSongs(args json.RawMessage) (string, error) {
 		if i > 0 {
 			time.Sleep(pause / 2)
 		}
-		t, score, err := Find(match.Parse(line))
+		t, score, err := crossplay.FindNetease(match.Parse(line))
 		switch {
 		case err != nil:
 			fmt.Fprintf(&b, "%d\t-\t\terror: %s\n", i+1, clean(err.Error()))

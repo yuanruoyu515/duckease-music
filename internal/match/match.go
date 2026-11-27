@@ -97,6 +97,16 @@ func Title(s string) string {
 	return Clean(s)
 }
 
+// TitleWords is a song's title without what versions add to it, as Title
+// cleans it, but with its words and spaces kept, for a search.
+func TitleWords(s string) string {
+	s = foldWidth(s)
+	if i := strings.Index(s, " - "); i > 0 {
+		s = s[:i]
+	}
+	return strings.Join(strings.Fields(dropBrackets(s)), " ")
+}
+
 // Clean lowercases s and keeps only its letters and digits, with
 // full-width forms folded to half-width.
 func Clean(s string) string {

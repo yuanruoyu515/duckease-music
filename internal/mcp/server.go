@@ -149,4 +149,5 @@ func call(t tool, args json.RawMessage) map[string]any {
 const instructions = `Manage the user's NetEase Cloud Music (网易云音乐) playlists in DuckEase Music.
 Replies are tab-separated lines with a header; song lines are: id, title, artists, album, length; "!" before an id marks a song the user can't stream.
 Work by id: list playlists, read one (use query to filter instead of reading long lists), find songs with search or match (match takes many "title - artist" lines at once), then add, remove or move by id.
+Spotify tools (spotify_*, sync_*) work once Spotify is connected in the app's settings; Spotify lets them read the songs only of playlists the user made or collaborates on. Syncing only adds songs.
 Write tools change the user's real account. NetEase rate-limits bursts (error -460): the server already spaces its requests; don't call write tools in parallel.`

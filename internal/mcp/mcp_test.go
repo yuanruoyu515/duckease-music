@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"netease-music-mygo/internal/crossplay"
 	"netease-music-mygo/internal/netease"
 )
 
@@ -81,7 +82,9 @@ func TestEditRefusesOthersPlaylists(t *testing.T) {
 func TestMatchStopsWhenRefused(t *testing.T) {
 	fake(t)
 	asked := 0
-	searchSongs = func(string, int) ([]netease.Track, error) {
+	find := crossplay.SearchNetease
+	defer func() { crossplay.SearchNetease = find }()
+	crossplay.SearchNetease = func(string, int) ([]netease.Track, error) {
 		asked++
 		return nil, &netease.RefusedError{Code: -460}
 	}
