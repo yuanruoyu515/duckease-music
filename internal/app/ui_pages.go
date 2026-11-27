@@ -292,6 +292,7 @@ func (a *app) playlistPage(c *ui.Context) {
 // order they are listed and played in.
 type plFilter struct {
 	id    int64
+	spot  string // or the Spotify playlist, whose page reuses it
 	query string
 	box   ui.Handle
 	sort  int    // sortDefault and on

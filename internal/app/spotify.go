@@ -414,11 +414,39 @@ func (a *app) spotifyPage(c *ui.Context) {
 		a.centered(c, pg.err, func() { a.loadSpotPage(id, true) })
 		return
 	}
+	// Sorted and searched as a NetEase playlist's page is.
+	f := &a.plFilter
+	if f.id != 0 || f.spot != id {
+		*f = plFilter{spot: id}
+	}
+	tracks := a.spotTracks(pg)
+	shown := f.match(tracks)
+	header := func(c *ui.Context) {
+		a.spotHeader(c, id, pl, pg)
+		ui.Row(c).Gap(10).AlignItems(ui.Center).Padding(0, 12, 14, 12).Children(func() {
+			a.playlistSort(c)
+			ui.Box(c).Grow(1)
+			a.playlistSearch(c)
+		})
+	}
 	var footer []func(c *ui.Context)
-	if len(pg.missing) > 0 {
+	if shown != nil && len(shown) == 0 {
+		footer = append(footer, func(c *ui.Context) { a.playlistNoMatch(c, strings.TrimSpace(f.query)) })
+	}
+	if len(pg.missing) > 0 && shown == nil {
 		footer = append(footer, func(c *ui.Context) { a.spotMissing(c, pg.missing) })
 	}
-	a.trackRows(c, pg.matched, true, func(c *ui.Context) { a.spotHeader(c, id, pl, pg) }, footer...)
+	a.trackRowsOf(c, tracks, shown, true, header, footer...)
+}
+
+// spotTracks returns the songs NetEase has of a Spotify playlist, in the
+// order chosen on its page.
+func (a *app) spotTracks(pg *spotPage) []netease.Track {
+	f := &a.plFilter
+	if f.spot == "" || f.id != 0 {
+		return pg.matched
+	}
+	return f.order.tracks(pg.matched, f.sort, f.luck)
 }
 
 func (a *app) spotHeader(c *ui.Context, id string, pl *spotify.Playlist, pg *spotPage) {
@@ -461,7 +489,8 @@ func (a *app) spotHeader(c *ui.Context, id string, pl *spotify.Playlist, pg *spo
 					if a.pl.Shuffle() {
 						a.pl.ToggleShuffle()
 					}
-					a.pl.PlayQueue(pg.matched, firstPlayable(pg.matched))
+					tracks := a.spotTracks(pg)
+					a.pl.PlayQueue(tracks, firstPlayable(tracks))
 				}
 				if pillButton(c.Key("shuffle"), iconShuffle, "随机播放", p.hover.Over(p.bg), p.text).Clicked() && len(pg.matched) > 0 {
 					a.pl.PlayShuffled(pg.matched)

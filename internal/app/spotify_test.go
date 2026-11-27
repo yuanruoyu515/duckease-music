@@ -161,3 +161,30 @@ func TestSpotifyLoadingFrames(t *testing.T) {
 		f.Close()
 	}
 }
+
+// A Spotify playlist's page searches its songs and sorts them as a NetEase
+// playlist's page does, and Play plays them in the order shown.
+func TestSpotifyPageSearchesAndSorts(t *testing.T) {
+	a := spotApp()
+	a.spot.pages["S"].matched = []netease.Track{{ID: 11, Name: "Zebra"}, {ID: 12, Name: "Apple"}, {ID: 13, Name: "Mango"}}
+	a.route = route{page: pageSpotify, query: "S"}
+	tt := ui.NewTester(a.view, 1200, 800)
+	tt.Frame()
+	if err := tt.Click("搜索歌单内歌曲"); err != nil {
+		t.Fatal(err)
+	}
+	tt.Type("man")
+	tt.Frame()
+	if shown := a.plFilter.match(a.spotTracks(a.spot.pages["S"])); len(shown) != 1 {
+		t.Fatalf("search for man shows %v", shown)
+	}
+	a.plFilter.query = ""
+	a.plFilter.sort = sortName
+	tt.Frame()
+	if err := tt.Click("播放"); err != nil {
+		t.Fatal(err)
+	}
+	if q := a.pl.Queue(); len(q) != 3 || q[0].Name != "Apple" || q[2].Name != "Zebra" {
+		t.Errorf("played %v, want by name", q)
+	}
+}
