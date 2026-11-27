@@ -48,6 +48,10 @@ brew install go                # 需要 go.mod 里写的 Go 1.27.4
 
 UI 框架的规则（Context、Element 生命周期、线程）见 `.agents/skills/mygo-maintenance/SKILL.md`，改界面前先读。
 
+## 给 agent 用的 MCP
+
+`DuckEase Music mcp` 不开界面，在 stdio 上提供管理歌单的 MCP 工具，用 app 钥匙串里的登录态。接法、工具和风控节奏见 [docs/MCP.md](docs/MCP.md)。改 `internal/netease` 里歌单相关函数的签名时，记得 `internal/mcp/tools.go` 也在用。
+
 ## 本机数据与备份
 
 - 侧边栏的顺序和隐藏项在 `settings.json` 的 `sidebar`，正在播放卡片在 `hideSideNowPlaying`。新加的侧边栏区块记得加进 `internal/app/sidebar.go` 的 `sideSections`，旧设置里没有的项会自动排到最后并显示。
