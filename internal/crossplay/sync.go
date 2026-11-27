@@ -82,7 +82,7 @@ func Sync(l Link, b Budget, progress Progress) (Report, error) {
 	for _, t := range ne.Tracks {
 		onNetease[t.ID] = true
 	}
-	r.Truncated = len(ne.TrackIDs) > len(ne.Tracks)
+	r.Truncated = len(ne.Tracks) >= 1000 && len(ne.TrackIDs) > len(ne.Tracks)
 	onSpotify := map[string]bool{}
 	for _, t := range sp {
 		onSpotify[t.URI] = true

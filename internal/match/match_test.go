@@ -56,3 +56,14 @@ func TestOtherArtistNeedsSameLength(t *testing.T) {
 		t.Errorf("a cover scored %.2f", s)
 	}
 }
+
+// An artist's name inside another's isn't the same artist: Jay isn't Jay
+// Chou, as a live search took him for; The Weeknd is Weeknd.
+func TestArtistNameInsideAnother(t *testing.T) {
+	if sameArtist(Clean("Jay"), Clean("Jay Chou")) {
+		t.Error("Jay taken for Jay Chou")
+	}
+	if !sameArtist(Clean("The Weeknd"), Clean("Weeknd")) {
+		t.Error("The Weeknd not taken for Weeknd")
+	}
+}

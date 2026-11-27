@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"strconv"
 	"strings"
 	"sync"
@@ -92,11 +93,11 @@ type id int64
 
 func (i *id) UnmarshalJSON(b []byte) error {
 	s := strings.Trim(string(b), `"`)
-	// A link, as music.163.com/#/playlist?id=123 or y.music.163.com/m/song?id=123&…
-	if i := strings.LastIndex(s, "id="); i >= 0 {
-		s = s[i+3:]
-		if j := strings.IndexAny(s, "&#/"); j >= 0 {
-			s = s[:j]
+	// A link, as music.163.com/#/playlist?id=123&userid=4: its id
+	// parameter, not userid's.
+	if _, query, ok := strings.Cut(s, "?"); ok {
+		if v, err := url.ParseQuery(query); err == nil && v.Get("id") != "" {
+			s = v.Get("id")
 		}
 	}
 	n, err := strconv.ParseInt(s, 10, 64)
@@ -414,7 +415,7 @@ func readPlaylist(args json.RawMessage) (string, error) {
 	if from > 0 || to < total {
 		fmt.Fprintf(&b, ", showing %d-%d", from+1, to)
 	}
-	if pl.TrackCount > len(pl.Tracks) {
+	if len(pl.Tracks) >= 1000 && pl.TrackCount > len(pl.Tracks) {
 		fmt.Fprintf(&b, " (only the first %d can be read)", len(pl.Tracks))
 	}
 	b.WriteString("\nid\ttitle\tartists\talbum\tlength\n")

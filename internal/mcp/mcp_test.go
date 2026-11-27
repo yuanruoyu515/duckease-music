@@ -132,3 +132,12 @@ func TestDuplicatesKeepVersionsApart(t *testing.T) {
 		t.Errorf("got:\n%s", text)
 	}
 }
+
+// A NetEase link gives its id parameter, not userid's, which a live test
+// read as playlist 1.
+func TestIDFromLink(t *testing.T) {
+	var got id
+	if err := json.Unmarshal([]byte(`"https://music.163.com/#/playlist?id=17752554350&userid=1"`), &got); err != nil || got != 17752554350 {
+		t.Errorf("got %d, %v", got, err)
+	}
+}

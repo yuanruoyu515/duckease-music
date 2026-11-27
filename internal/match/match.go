@@ -62,8 +62,7 @@ func Score(a, b Song) float64 {
 		artist = 0
 		for _, x := range a.Artists {
 			for _, y := range b.Artists {
-				nx, ny := Clean(x), Clean(y)
-				if nx != "" && ny != "" && (nx == ny || strings.Contains(nx, ny) || strings.Contains(ny, nx)) {
+				if sameArtist(Clean(x), Clean(y)) {
 					artist = 1
 				}
 			}
@@ -91,6 +90,21 @@ func Score(a, b Song) float64 {
 		return 0
 	}
 	return 0.55*title + 0.3*artist + 0.15*length
+}
+
+// sameArtist reports whether two cleaned names are one artist's: the
+// same, or one most of the other, as "weeknd" of "theweeknd", but not
+// "jay" of "jaychou".
+func sameArtist(a, b string) bool {
+	if a == "" || b == "" {
+		return false
+	}
+	if a == b {
+		return true
+	}
+	la, lb := len([]rune(a)), len([]rune(b))
+	short, long := min(la, lb), max(la, lb)
+	return (strings.Contains(a, b) || strings.Contains(b, a)) && short*5 >= long*3
 }
 
 // Title is a song's title cleaned, without what versions add to it: "(feat.
