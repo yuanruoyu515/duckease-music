@@ -30,7 +30,7 @@
   <tr>
     <td width="33%" valign="top"><img src="assets/icons/music.svg" width="22" height="22"> <b>原生，占得少</b><br>MyGo 直接绘制界面，不套 WebView。在我的 Mac 上占 191 MB 内存。</td>
     <td width="33%" valign="top"><img src="assets/icons/lyrics.svg" width="22" height="22"> <b>让 AI agent 理歌单</b><br>应用本身就是 MCP 服务器。Codex、Claude Code 这类 agent 能读歌单、批量找歌、去重、建歌单。</td>
-    <td width="33%" valign="top"><img src="assets/icons/duck.svg" width="22" height="22"> <b>Spotify 歌单拿来听</b><br>Spotify 歌单显示在侧边栏，歌从网易云找来播放；两边歌单能互相复制、同步。</td>
+    <td width="33%" valign="top"><img src="assets/icons/duck.svg" width="22" height="22"> <b>和 Spotify 同步</b><br>Spotify 歌单显示在侧边栏，歌从网易云找来播放；两边歌单能互相复制、关联、同步，在这里也能编辑。<a href="#和-spotify-同步">看怎么用</a></td>
   </tr>
 </table>
 
@@ -49,7 +49,7 @@
 | 看 | `playlists` 列出歌单，`playlist` 读歌单里的歌（可按关键词筛），`search` 搜歌 |
 | 找 | `match` 一次给最多 100 行「歌名 - 歌手」，每行返回最像的网易云歌曲和相似度；`duplicates` 找重复的歌 |
 | 改 | `create_playlist`、`add_songs`、`remove_songs`、`rename_playlist`、`delete_playlist`、`like_songs` |
-| Spotify | 读 Spotify 歌单和喜欢的歌曲、搜歌、加歌删歌、两边互相复制、同步关联的歌单、改正配错的歌，见下一节 |
+| Spotify | 读 Spotify 歌单和喜欢的歌曲、搜歌、加歌删歌、两边互相复制、同步关联的歌单、改正配错的歌，见[和 Spotify 同步](#和-spotify-同步) |
 
 只有自己建的歌单能改；收藏的别人的歌单只读，「我喜欢的音乐」不能改名也不能删。
 
@@ -59,22 +59,57 @@
 
 第一次调用时，钥匙串可能会问能不能让 DuckEase Music 读取登录信息，点「始终允许」。ad hoc 签名每次构建都会变，换新版本后可能再问一次。手动配置、完整工具列表和单次调用的上限见 [docs/MCP.md](docs/MCP.md)。
 
-## Spotify 和网易云互通
+## 和 Spotify 同步
 
-连上 Spotify 后，侧边栏多一组「Spotify 歌单」，最上面是「Spotify 喜欢的歌曲」，显示哪些歌单可以自己挑。点开一个，里面的歌会在网易云上找到对应的那首，直接在 DuckEase Music 里放。Spotify 歌单在这里也能新建、改名、删除、加歌删歌。**Spotify 的音频不在这里播放**：Spotify 的接口不提供音频，能放的只有网易云（和打开了的备用音源）里有的歌，找不到的列在歌单页最底下。
+DuckEase Music 把 Spotify 和网易云接了起来：Spotify 歌单出现在侧边栏，歌从网易云找来放；两边的歌单能互相复制、关联、同步，Spotify 歌单在这里也能直接编辑。
+
+> **Spotify 的音频不在这里播放。** Spotify 的接口不提供音频，能放的只有网易云（和打开了的备用音源）里有的歌，找不到的列在歌单页最底下。本项目与 Spotify 没有隶属或合作关系。
 
 <table>
   <tr>
-    <td width="50%" valign="top"><b>Spotify 歌单页</b><br>匹配到的歌直接放，没找到的列在最底下；和网易云歌单关联后，这里能同步。<br><br><picture><source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/spotify-dark.png"><img alt="Spotify 歌单「公路旅行」，8 首里网易云有 6 首，已和网易云歌单关联，底部列出没找到的 2 首" src="assets/screenshots/spotify-light.png"></picture></td>
-    <td width="50%" valign="top"><b>边游边匹配</b><br>小鸭游到哪，就匹配到哪。离开页面也接着找，侧边栏显示百分比。<br><br><picture><source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/spotify-matching-dark.png"><img alt="匹配进度：小鸭在水线上游到三分之一处，下面写着正在网易云匹配歌曲 412 / 1302，侧边栏歌单旁显示 31%" src="assets/screenshots/spotify-matching-light.png"></picture></td>
+    <td width="50%" valign="top"><b>Spotify 歌单页</b><br>匹配到的歌直接放，没找到的列在最底下。已关联的歌单标出对应的网易云歌单和上次同步时间。<br><br><picture><source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/spotify-dark.png"><img alt="Spotify 歌单「公路旅行」，8 首里网易云有 6 首，已关联网易云歌单「通勤路上」，侧边栏最上面是 Spotify 喜欢的歌曲" src="assets/screenshots/spotify-light.png"></picture></td>
+    <td width="50%" valign="top"><b>手动匹配</b><br>没找到的歌点一下，弹出网易云搜索，点中哪首就记成哪首，以后同步也按它来。<br><br><picture><source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/spotify-match-dark.png"><img alt="手动匹配弹窗：搜索框里是 Late Night Drive Demo Band，下面两条网易云结果，一条带「深夜开车」别名，一条是 Live" src="assets/screenshots/spotify-match-light.png"></picture></td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top"><b>关联已有歌单</b><br>Spotify 歌单可以复制成新的网易云歌单，也可以直接接到你已有的歌单上，勾上双向同步，两边互补。<br><br><picture><source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/spotify-link-dark.png"><img alt="把「下雨天听的歌」带到网易云的对话框，选了关联已有歌单「睡前听」，勾着双向同步" src="assets/screenshots/spotify-link-light.png"></picture></td>
+    <td width="50%" valign="top"><b>一步步连上</b><br>设置里按顺序写好了每一步，地址一键复制，Client ID 位数不对会提示。<br><br><picture><source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/spotify-connect-dark.png"><img alt="设置里的 Spotify 连接指引，五个编号步骤和一个粘贴 Client ID 的输入框" src="assets/screenshots/spotify-connect-light.png"></picture></td>
   </tr>
 </table>
 
-**连接**要用你自己的 Spotify 开发者 app：在 Spotify 的 Developer Dashboard 建一个，Redirect URI 填 `http://127.0.0.1:43821/callback`，把 Client ID 粘到「设置 → Spotify」，点「连接」。设置里有一步一步的指引。走 PKCE，不需要 Client Secret，令牌存在钥匙串里。按 Spotify 2026 年起的规定，app 的所有者要有 **Premium**，接口也只开放**自己创建或参与协作的歌单**；收藏的别人的歌单和官方歌单改从公开页面读，只能读到前 100 首。步骤和限制详见 [docs/SPOTIFY.md](docs/SPOTIFY.md)。
+### 连上 Spotify
 
-**匹配**按歌名、歌手和时长打分，会认网易云的歌手别名，歌名相同但歌手对不上的要时长也一样才算，免得把翻唱当原曲。打开歌单页不会自动去搜，直接显示上次读到的内容；点「更新」才重新读 Spotify、搜还没找过的歌，离开页面也会在后台接着找，侧边栏歌单名旁边显示百分比。找过的结果会记下来，以后只搜新加的歌。配错了，可以让 agent 用 `fix_match` 改过来。
+Spotify 不给第三方软件统一的接口，每个人要建一个自己的开发者 app，拿到它的 Client ID。免费，大约 3 分钟：
 
-**复制和同步**：Spotify 歌单页能「复制到网易云」，可以自己起名字（网易云不收某些名字时改一下就行），也可以直接关联一个已有的网易云歌单。自己的网易云歌单在「⋯」菜单里能「复制到 Spotify」，复制过的两个歌单会关联起来。之后的同步可以单向，也可以双向，但**只加不删**：一边删掉的歌，另一边不跟着删；你上次同步后删掉的歌，下次也不会被加回来。
+1. 用你的 Spotify 账号登录 [Developer Dashboard](https://developer.spotify.com/dashboard)，点 Create app。
+2. 名字和描述随便填。Redirect URI 填 `http://127.0.0.1:43821/callback`，一个字都不能差。API 勾 Web API。
+3. 打开刚建的 app 的 Settings，复制 Client ID，粘到「设置 → Spotify」，点「连接」，在浏览器里点 Agree。
+
+走 PKCE，不需要 Client Secret，令牌存在钥匙串里。按 Spotify 2026 年起的规定，**建 app 的账号要有 Premium**；只给自己用不用管名单，给别人用要在 app 的 User Management 里加上他们的邮箱，最多 5 人。0.1.25-duckease.8 之前连过的，在设置里点一次「重新连接」，授权读写“喜欢的歌曲”。
+
+### 能做什么
+
+| | |
+|---|---|
+| **看** | 侧边栏列出你的 Spotify 歌单，最上面是「Spotify 喜欢的歌曲」；显示哪些歌单可以自己挑。收藏的别人的歌单和官方歌单从公开页面读，只能读到前 100 首，私密的读不了 |
+| **听** | 每首歌按歌名、歌手、时长在网易云上找对应的那首，认网易云的歌手别名；歌名一样但歌手对不上的，时长也一样才算，免得把翻唱当原曲 |
+| **改** | 新建、改名、改简介、删除 Spotify 歌单；任何一首歌右键「添加到 Spotify 歌单」，歌单页里右键移除。往“喜欢的歌曲”里加就是点赞 |
+| **配** | 没找到的歌点一下手动匹配；配错的右键「匹配错了，手动改…」。不想配的就留在底下 |
+| **搬** | Spotify 歌单「复制到网易云」，名字可以改（网易云不收某些名字，被拒时改一下就行）；或者「关联已有歌单」，包括「我喜欢的音乐」。网易云歌单在「⋯」菜单里也能「复制到 Spotify」 |
+| **同步** | 关联过的两个歌单可以单向或双向同步 |
+| **红心** | 「设置 → 播放 → 点红心时同时添加到」选一个网易云或 Spotify 歌单，点红心时歌同时进去。排序菜单里的「只看不在红心歌单的」能挑出还没点红心的歌 |
+
+### 同步怎么算
+
+- **只加不删。** 一边删掉的歌，另一边不会跟着删，匹配错了也不会误删东西。
+- **不加回你删掉的。** 每次同步记下两边当时有哪些歌，上次同步之后你从某一边删掉的，下次不会从另一边加回来。
+- **找完再加。** 先把所有歌都找完，再按原来的顺序一次加进去；中途停下就一首都不加，下次接着找。
+- **不来回加。** 双向同步时，同一首歌两边版本不同（比如 Spotify 上是重制版），不会各加一遍。
+
+### 不会每次都重新搜
+
+打开歌单页直接显示上次读到的内容，不联网，重启后也在。点「更新」才会重新读 Spotify、在网易云搜还没找过的歌：每首搜一次，间隔 0.8 秒，免得触发网易云风控；离开页面也会在后台接着找，侧边栏歌单名旁边显示百分比。找过的结果记在 `crossplay.json`，没找到的 7 天后才会再试。Spotify 那边歌单有变化时，标题下面会提示。
+
+AI agent 也能做这些：MCP 里有 `spotify_playlists`、`spotify_search`、`spotify_add_songs`、`sync_playlist`、`fix_match` 等工具，歌单 id 写 `liked` 就是 Spotify 喜欢的歌曲。完整说明、限制和代码位置见 [docs/SPOTIFY.md](docs/SPOTIFY.md)。
 
 ## 看看界面
 

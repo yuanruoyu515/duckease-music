@@ -30,7 +30,7 @@ The original app and most of its code are the work of **egoist and the upstream 
   <tr>
     <td width="33%" valign="top"><img src="assets/icons/music.svg" width="22" height="22"> <b>Native and small</b><br>MyGo draws the interface directly, with no WebView. 191 MB of memory on my Mac.</td>
     <td width="33%" valign="top"><img src="assets/icons/lyrics.svg" width="22" height="22"> <b>Playlists by AI agent</b><br>The app is its own MCP server. Agents such as Codex and Claude Code can read playlists, match songs in bulk, dedupe, and build new ones.</td>
-    <td width="33%" valign="top"><img src="assets/icons/duck.svg" width="22" height="22"> <b>Spotify playlists, played here</b><br>Your Spotify playlists sit in the sidebar and play from NetEase matches; copy and sync playlists either way.</td>
+    <td width="33%" valign="top"><img src="assets/icons/duck.svg" width="22" height="22"> <b>Syncing with Spotify</b><br>Your Spotify playlists sit in the sidebar and play from NetEase matches; copy, link and sync playlists either way, and edit them here. <a href="#syncing-with-spotify">How</a></td>
   </tr>
 </table>
 
@@ -49,7 +49,7 @@ Then just ask, say, "remove the duplicates from these playlists" or "make a play
 | Reading | `playlists` lists your playlists, `playlist` reads one (with an optional keyword filter), `search` searches songs |
 | Finding | `match` takes up to 100 "title - artist" lines and returns the closest NetEase song and a score for each; `duplicates` finds repeated songs |
 | Changing | `create_playlist`, `add_songs`, `remove_songs`, `rename_playlist`, `delete_playlist`, `like_songs` |
-| Spotify | read Spotify playlists, copy either way, sync linked playlists, correct a wrong match (next section) |
+| Spotify | read Spotify playlists and Liked Songs, search, add and remove songs, copy either way, sync linked playlists, correct a wrong match ([Syncing with Spotify](#syncing-with-spotify)) |
 
 Only playlists you created can be changed. Saved playlists by others are read-only, and your liked songs can't be renamed or deleted.
 
@@ -59,22 +59,40 @@ Only playlists you created can be changed. Saved playlists by others are read-on
 
 On the first call, the Keychain may ask whether DuckEase Music can read its login; choose Always Allow. Ad hoc signatures change with every build, so a new version may ask again. Manual setup, the full tool list, and per-call limits are in [docs/MCP.md](docs/MCP.md) (Chinese).
 
-## Spotify and NetEase, both ways
+## Syncing with Spotify
 
-Once Spotify is connected, the sidebar gets a Spotify 歌单 group. Open a playlist and each song is looked up on NetEase and played in DuckEase Music. **Spotify audio is not played here**: Spotify's API provides no audio, so only songs that NetEase (or the fallback source, if on) has will play. Songs without a match are listed at the bottom of the page.
+DuckEase Music connects Spotify and NetEase: your Spotify playlists sit in the sidebar and play from NetEase matches, playlists can be copied, linked and synced either way, and Spotify playlists can be edited right here.
+
+> **Spotify audio is not played here.** Spotify's API provides no audio, so only songs that NetEase (or the fallback source, if on) has will play; songs without a match are listed at the bottom of the page. This project has no affiliation with Spotify.
 
 <table>
   <tr>
-    <td width="50%" valign="top"><b>A Spotify playlist</b><br>Matched songs play right away; the ones NetEase lacks are listed at the bottom. Once linked to a NetEase playlist, it syncs from here.<br><br><picture><source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/spotify-dark.png"><img alt="The Spotify playlist 公路旅行: NetEase has 6 of its 8 songs, it is linked to a NetEase playlist, and the 2 songs not found are listed at the bottom" src="assets/screenshots/spotify-light.png"></picture></td>
-    <td width="50%" valign="top"><b>Matching, with a duck</b><br>The duck swims as far as the matching has got. Leave the page and it keeps going, with a percentage in the sidebar.<br><br><picture><source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/spotify-matching-dark.png"><img alt="Matching progress: the duck a third of the way along a waterline, above 正在网易云匹配歌曲 412 / 1302, with 31% beside the playlist in the sidebar" src="assets/screenshots/spotify-matching-light.png"></picture></td>
+    <td width="50%" valign="top"><b>A Spotify playlist</b><br>Matched songs play right away; the ones NetEase lacks are listed at the bottom. A linked playlist names its NetEase partner and the last sync.<br><br><picture><source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/spotify-dark.png"><img alt="The Spotify playlist 公路旅行: NetEase has 6 of its 8 songs, it is linked to the NetEase playlist 通勤路上, and Spotify Liked Songs tops the sidebar" src="assets/screenshots/spotify-light.png"></picture></td>
+    <td width="50%" valign="top"><b>Match by hand</b><br>Click a song that wasn't found and search NetEase for it; the one you pick is kept as its match, for syncs too.<br><br><picture><source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/spotify-match-dark.png"><img alt="The manual match dialog: a search for Late Night Drive Demo Band with two NetEase results, one with the alias 深夜开车 and one Live" src="assets/screenshots/spotify-match-light.png"></picture></td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top"><b>Link a playlist you have</b><br>Copy a Spotify playlist into a new NetEase one, or attach it to one you already have, both ways if you like.<br><br><picture><source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/spotify-link-dark.png"><img alt="The dialog bringing 下雨天听的歌 to NetEase, linking the existing playlist 睡前听 with two-way sync ticked" src="assets/screenshots/spotify-link-light.png"></picture></td>
+    <td width="50%" valign="top"><b>Connect step by step</b><br>The settings walk through each step, copy the redirect URI for you, and warn when a Client ID has the wrong length.<br><br><picture><source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/spotify-connect-dark.png"><img alt="The Spotify connection guide in the settings: five numbered steps and a field for the Client ID" src="assets/screenshots/spotify-connect-light.png"></picture></td>
   </tr>
 </table>
 
-**Connecting** takes a Spotify developer app of your own: create one in Spotify's Developer Dashboard with the redirect URI `http://127.0.0.1:43821/callback`, paste its Client ID under Settings → Spotify, and click 连接 (Connect). Login uses PKCE, needs no client secret, and keeps its tokens in the Keychain. Under Spotify's rules since 2026, the app's owner needs **Premium**, and only playlists **you created or collaborate on** can be read; followed and editorial playlists appear greyed out. Steps and limits are in [docs/SPOTIFY.md](docs/SPOTIFY.md) (Chinese).
+**Connecting** takes a Spotify developer app of your own, free and about three minutes: create one in the [Developer Dashboard](https://developer.spotify.com/dashboard) with the redirect URI `http://127.0.0.1:43821/callback` and Web API ticked, paste its Client ID under Settings → Spotify, and click 连接 (Connect). Login uses PKCE, needs no client secret, and keeps its tokens in the Keychain. Under Spotify's rules since 2026, **the app's owner needs Premium**, and up to five other users can be added in its User Management. If you connected before 0.1.25-duckease.8, click 重新连接 (Reconnect) once to allow Liked Songs.
 
-**Matching** scores title, artist, and duration, and knows NetEase's artist aliases. A same-titled song by a different artist counts only if the duration matches too, so covers aren't taken for the original. The first time you open a long playlist, songs are searched one by one while a duck swims across the page; leave the page and matching carries on in the background, with a percentage beside the playlist in the sidebar. Matches are remembered, so later only new songs are searched. If a match is wrong, an agent can fix it with `fix_match`.
+| | |
+|---|---|
+| **See** | Your Spotify playlists in the sidebar, Spotify Liked Songs on top; choose which show. Playlists of others are read off their public page, first 100 songs only; private ones can't be read |
+| **Play** | Each song is found on NetEase by title, artist and duration, NetEase's artist aliases included; a same-titled song by another artist counts only if the duration matches too, so covers aren't taken for originals |
+| **Edit** | Create, rename, describe and delete Spotify playlists; add any song from its menu, remove from the playlist page. Adding to Liked Songs likes a song |
+| **Match** | Click a song not found to match it by hand; fix a wrong match from its menu. Songs left alone stay at the bottom |
+| **Move** | Copy a Spotify playlist to NetEase under a name you choose (NetEase refuses some; just change it), or link one you have, 我喜欢的音乐 included. NetEase playlists copy to Spotify from their ⋯ menu |
+| **Sync** | Linked playlists sync one way or both |
+| **Heart** | Settings → 播放 → 点红心时同时添加到 adds a hearted song to a NetEase or Spotify playlist of your choice. The sort menu can list only the songs not yet hearted |
 
-**Copy and sync**: a Spotify playlist page offers 复制到网易云 (copy to NetEase), and your own NetEase playlists have 复制到 Spotify in their ⋯ menu. The two playlists are then linked. Syncing can go one way or both, and it **only adds**: songs removed on one side are not removed on the other, and songs you removed since the last sync are not added back.
+**How syncing counts**: it **only adds**, so a song removed on one side isn't removed on the other; songs you removed since the last sync aren't added back; it finds every song before adding any, in order, so a sync cut short adds nothing; and two versions of one song (a remaster on Spotify, say) aren't each added to the other side.
+
+**No searching on every open**: a playlist page shows what it read last time, offline and across restarts. 更新 (Update) reads Spotify again and looks on NetEase for songs not found yet, one search every 0.8 seconds to stay clear of NetEase's risk control; it keeps going when you leave the page, with a percentage in the sidebar. Matches are kept in `crossplay.json`; songs not found are tried again after 7 days.
+
+AI agents can do all this too, through MCP tools such as `spotify_playlists`, `spotify_search`, `spotify_add_songs`, `sync_playlist` and `fix_match`; the playlist id `liked` is Spotify Liked Songs. Details, limits and code are in [docs/SPOTIFY.md](docs/SPOTIFY.md) (Chinese).
 
 ## A look inside
 

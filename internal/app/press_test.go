@@ -31,7 +31,7 @@ func TestPressScreenshots(t *testing.T) {
 	}
 	fallbackUsage = func(time.Time) (int, int, time.Duration) { return 12, 40, 3*time.Minute + 12*time.Second }
 	defer func() { fallbackUsage = netease.FallbackUsage }()
-	for _, scene := range []string{"home", "now-playing", "stage", "queue", "playlist", "settings", "picking", "manager", "cover-picker", "sidebar", "backup", "wall", "stage-partita", "stage-tilt", "fog", "daily", "agents", "spotify", "spotify-matching"} {
+	for _, scene := range []string{"home", "now-playing", "stage", "queue", "playlist", "settings", "picking", "manager", "cover-picker", "sidebar", "backup", "wall", "stage-partita", "stage-tilt", "fog", "daily", "agents", "spotify", "spotify-matching", "spotify-match", "spotify-link", "spotify-connect"} {
 		for _, dark := range []bool{false, true} {
 			a := pressApp()
 			view, w, h := a.view, 1200, 800
@@ -87,6 +87,23 @@ func TestPressScreenshots(t *testing.T) {
 			case "spotify":
 				pressSpotify(a)
 				a.route = route{page: pageSpotify, query: "sp-road"}
+			case "spotify-match":
+				pressSpotify(a)
+				a.route = route{page: pageSpotify, query: "sp-road"}
+				t := a.spot.pages["sp-road"].missing[0]
+				a.spot.matching = spotMatchDialog{open: true, page: "sp-road", track: t, query: "Late Night Drive Demo Band", searched: true,
+					results: []netease.Track{a.daily[6], a.daily[7]}}
+				a.spot.matching.results[0].Name, a.spot.matching.results[0].Alias = "Late Night Drive", []string{"深夜开车"}
+				a.spot.matching.results[1].Name, a.spot.matching.results[1].Alias = "Late Night Drive", []string{"Live"}
+			case "spotify-link":
+				pressSpotify(a)
+				a.route = route{page: pageSpotify, query: "sp-rain"}
+				a.spot.pages["sp-rain"] = &spotPage{tracks: make([]spotify.Track, 6), matched: a.daily[2:8], from: make([]string, 6)}
+				a.openSpotImport("sp-rain", "下雨天听的歌", true)
+				a.spot.importing.target, a.spot.importing.both = "睡前听", true
+			case "spotify-connect":
+				view, w, h = a.settingsView, 560, 2400
+				a.spot.checked, a.spot.clientID = true, ""
 			case "spotify-matching":
 				pressSpotify(a)
 				a.route = route{page: pageSpotify, query: "sp-rain"}
@@ -98,6 +115,14 @@ func TestPressScreenshots(t *testing.T) {
 			tt.Frame()
 			img := tt.Image()
 			// The settings' groups the newest switches are in.
+			if scene == "spotify-connect" {
+				f, ok := tt.Find("连接 Spotify")
+				e, ok2 := tt.Find("要知道的几件事")
+				if !ok || !ok2 {
+					t.Fatal("no Spotify group")
+				}
+				img = img.SubImage(image.Rect(0, int(f.Y-52), w, int(e.Y+150))).(*image.RGBA)
+			}
 			if from, to := map[string]string{"settings": "播放", "backup": "备份"}[scene], map[string]string{"settings": "缓存", "backup": "更新"}[scene]; from != "" {
 				f, ok := tt.Find(from)
 				e, ok2 := tt.Find(to)
@@ -187,12 +212,13 @@ func pressSpotify(a *app) {
 		{ID: "sp-followed", Name: "别人的精选", Owner: spotify.User{ID: "someone"}},
 	}
 	songs := a.daily[:6]
-	missing := []spotify.Track{{Name: "Late Night Drive"}, {Name: "Coastline"}}
+	missing := []spotify.Track{{ID: "m1", URI: "spotify:track:m1", Name: "Late Night Drive", Duration: 214000}, {ID: "m2", URI: "spotify:track:m2", Name: "Coastline", Duration: 198000}}
 	missing[0].Artists = append(missing[0].Artists, struct {
 		Name string `json:"name"`
 	}{"Demo Band"})
 	missing[1].Artists = missing[0].Artists
-	a.spot.pages = map[string]*spotPage{"sp-road": {tracks: make([]spotify.Track, 8), matched: songs, missing: missing}}
+	a.spot.liked = 326
+	a.spot.pages = map[string]*spotPage{"sp-road": {tracks: make([]spotify.Track, 8), matched: songs, from: make([]string, len(songs)), missing: missing}}
 	a.spot.links = []crossplay.Link{{Spotify: "sp-road", Netease: 201, Name: "公路旅行", Direction: crossplay.Both,
 		Synced: time.Date(2026, 11, 27, 9, 30, 0, 0, time.Local)}}
 }
