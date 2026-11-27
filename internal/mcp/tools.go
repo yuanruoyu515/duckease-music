@@ -163,7 +163,7 @@ func neteaseTools() []tool {
 			name: "match", title: "Find songs by name", readOnly: true,
 			description: "Find the NetEase song for each of many songs at once, e.g. to import a list. Each line is \"title - artist[, artist]\". Lines out: n (1-based), id, score (0-1), title, artists; id \"-\" when nothing matched well. Feed the ids to add_songs.",
 			params: map[string]any{
-				"songs": map[string]any{"type": "array", "items": map[string]any{"type": "string"}, "description": "\"title - artist\" lines, up to 200"},
+				"songs": map[string]any{"type": "array", "items": map[string]any{"type": "string"}, "description": "\"title - artist\" lines, up to 100"},
 			},
 			required: []string{"songs"},
 			run:      matchSongs,

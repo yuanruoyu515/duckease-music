@@ -33,7 +33,7 @@ claude mcp add duckease -- "/Applications/DuckEase Music.app/Contents/MacOS/Duck
 | `playlists` | 列出你的歌单：id、名字、歌曲数、类型（liked / mine / saved） |
 | `playlist` | 读一个歌单的歌，可以用 `query` 只要标题、歌手、专辑里带某个词的 |
 | `search` | 搜歌 |
-| `match` | 一次给最多 200 行「歌名 - 歌手」，每行返回最像的网易云歌曲 id 和相似度 |
+| `match` | 一次给最多 100 行「歌名 - 歌手」，每行返回最像的网易云歌曲 id 和相似度 |
 | `duplicates` | 找歌单里重复的歌（同一个 id，或者歌名和歌手一样） |
 | `create_playlist` | 建歌单，可以顺便把歌加进去，顺序照给的来 |
 | `add_songs` / `remove_songs` | 往自己的歌单里加歌、删歌，已经有的歌自动跳过 |

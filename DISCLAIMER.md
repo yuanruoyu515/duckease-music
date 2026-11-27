@@ -10,7 +10,7 @@
 
 DuckEase Music 是 Ruoyu / SysNomad 在 MyGo Music 下线后，基于公开保留源码维护的独立衍生项目。原应用由 egoist 及原项目贡献者开发。这里的「个人接续维护」不代表正式移交，也不代表原作者同意本次发布。
 
-本项目不是网易或网易云音乐的官方产品，没有获得其认可、赞助或合作背书，也不代表原作者、MyGo 框架作者或相关贡献者发言。项目名称、旧 bundle identifier 和兼容代码均不能作为上述关系的证明。应用沿用原 bundle identifier `dev.egoist.cloudmusic`，只是为了让旧版用户的本地数据能够迁移，不表示与原作者有关。
+本项目不是网易或网易云音乐的官方产品，没有获得其认可、赞助或合作背书，也不代表原作者、MyGo 框架作者或相关贡献者发言。同样，本项目与 Spotify 没有隶属或合作关系；Spotify 功能通过用户自己注册的开发者 app 调用其公开 Web API，不播放 Spotify 的音频。项目名称、旧 bundle identifier 和兼容代码均不能作为上述关系的证明。应用沿用原 bundle identifier `dev.egoist.cloudmusic`，只是为了让旧版用户的本地数据能够迁移，不表示与原作者有关。
 
 ### 原项目下线情况与停止分发的可能
 
@@ -68,7 +68,7 @@ DuckEase Music 是 Ruoyu / SysNomad 在 MyGo Music 下线后，基于公开保�
 
 DuckEase Music is an independent derivative maintained by Ruoyu / SysNomad after MyGo Music went offline. The original app was developed by egoist and its contributors. Personal continuation does not mean an official handover or permission from the original author for this publication.
 
-This is not an official NetEase or NetEase Cloud Music product. There is no claimed affiliation, approval, sponsorship, or endorsement from the platform, the original author, the MyGo framework author, or their contributors. Retained identifiers and compatibility code do not establish such a relationship. The app keeps the original bundle identifier `dev.egoist.cloudmusic` only so that existing users' local data can migrate; it does not indicate a connection with the original author.
+This is not an official NetEase or NetEase Cloud Music product. There is no claimed affiliation, approval, sponsorship, or endorsement from the platform, the original author, the MyGo framework author, or their contributors. Likewise, it is not affiliated with Spotify; the Spotify features call Spotify's public Web API through a developer app the user registers, and play no Spotify audio. Retained identifiers and compatibility code do not establish such a relationship. The app keeps the original bundle identifier `dev.egoist.cloudmusic` only so that existing users' local data can migrate; it does not indicate a connection with the original author.
 
 ### Takedown history and possible end of distribution
 
