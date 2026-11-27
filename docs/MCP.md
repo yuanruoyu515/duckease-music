@@ -39,8 +39,10 @@ claude mcp add duckease -- "/Applications/DuckEase Music.app/Contents/MacOS/Duck
 | `add_songs` / `remove_songs` | 往自己的歌单里加歌、删歌，已经有的歌自动跳过 |
 | `rename_playlist` / `delete_playlist` | 改名、删除自己的歌单。「我喜欢的音乐」不能改也不能删 |
 | `like_songs` | 喜欢或取消喜欢 |
-| `spotify_playlists` | 列出 Spotify 歌单，带关联的网易云歌单 id |
-| `spotify_playlist` | 读一个自己的 Spotify 歌单的歌 |
+| `spotify_playlists` | 列出 Spotify 歌单（第一行是喜欢的歌曲，id 为 `liked`），带关联的网易云歌单 id |
+| `spotify_playlist` | 读一个 Spotify 歌单的歌；别人的歌单只能读前 100 首 |
+| `spotify_search` | 在 Spotify 搜歌，最多 10 条 |
+| `spotify_add_songs` / `spotify_remove_songs` | 往自己的 Spotify 歌单或喜欢的歌曲里加歌、删歌，已经有的自动跳过 |
 | `spotify_import` / `spotify_export` | 把 Spotify 歌单复制到网易云，或反过来，并关联两个歌单 |
 | `sync_links` / `sync_playlist` | 查看关联、同步关联的歌单（只加不删，不会加回你删掉的歌） |
 | `fix_match` | 改正一首 Spotify 歌对应的网易云歌曲 |
@@ -61,7 +63,10 @@ Spotify 的工具要先在 app 设置里连接 Spotify，见 [SPOTIFY.md](SPOTIF
 - 任何请求遇到 `-460`（包括播放时取歌曲地址），之后 1 分钟内改歌单和搜歌的请求一律不发；10 分钟内再被拒一次就翻倍，最长 15 分钟。返回给 agent 的错误会写明还要等多久，并提醒它别提前重试。
 - MCP 读歌单的请求之间隔 250 毫秒。
 - 单次调用的上限：`match` 100 行，加歌 1000 首，删歌和喜欢 200 首。超出会让 agent 分几次调。
-- 工具调用一个接一个地执行，不并发；执行期间照常响应 ping，客户端取消了还没开始的调用就不再执行。
+- 工具调用一个接一个地执行，不并发；执行期间照常响应 ping。客户端取消了还没开始的调用就不再执行，正在跑的调用会在找下一首歌前停下。
+- `match`、`sync_playlist`、`spotify_import` 这类要逐首搜歌的调用，跑约 45 秒就停，回复里写清楚找到哪儿了、下一步怎么调；找到的结果都会记下。客户端请求进度时（`_meta.progressToken`），会边找边发 `notifications/progress`。
+- `match` 两次搜索之间隔 0.6 秒。网易云回 405「操作频繁」时，如果只需要等几秒、时间又够，就在这次调用里等过去接着找，不再当成错误交给 agent；405 和 `-460` 的提示也分开写了。
+- 单个调用超过 100 秒还没结束（比如卡在钥匙串弹窗上），会先回一个错误，并让它在找下一首歌前停下。它还在跑的时候，后面的调用等 5 秒就直接返回“前一个调用还在运行”，不会一起卡死。
 
 只有你自己建的歌单能改。收藏的别人的歌单只能读，改它会直接报错，不会发请求。
 
