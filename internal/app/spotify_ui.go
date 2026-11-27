@@ -372,6 +372,8 @@ func (a *app) spotDialogs(c *ui.Context) {
 		buttons(action, ok, func() { d.open = false }, a.submitSpotImport)
 	})
 
+	a.spotMatchView(c)
+
 	ch := &a.spot.choosing
 	ui.DialogBase(c.Key("spotify-choose"), &ch.open, func(backdrop, pn ui.Element) {
 		backdrop.Background(ui.RGBA(0, 0, 0, 0.35))
@@ -494,3 +496,193 @@ var (
 		}
 	}
 )
+
+// spotMatchDialog chooses by hand which NetEase song a Spotify one is:
+// it searches NetEase, the Spotify song's title and artist to start with,
+// and the song clicked is kept as its match from then on.
+type spotMatchDialog struct {
+	open      bool
+	page      string        // the Spotify playlist whose page asked
+	track     spotify.Track // the Spotify song matched
+	query     string
+	results   []netease.Track
+	searching bool
+	searched  bool
+	err       string
+	seq       int // which search the results are of
+	saving    bool
+}
+
+// The calls matching by hand makes; tests replace them.
+var (
+	matchSearch = netease.Search
+	pinMatch    = crossplay.Pin
+)
+
+// openSpotMatch asks which NetEase song Spotify song t of playlist page
+// is, searching for it at once.
+func (a *app) openSpotMatch(page string, t spotify.Track) {
+	q := t.Name
+	if len(t.Artists) > 0 {
+		q += " " + t.Artists[0].Name
+	}
+	a.spot.matching = spotMatchDialog{open: true, page: page, track: t, query: q}
+	a.searchSpotMatch()
+}
+
+func (a *app) searchSpotMatch() {
+	d := &a.spot.matching
+	q := strings.TrimSpace(d.query)
+	if q == "" {
+		return
+	}
+	d.seq++
+	seq := d.seq
+	d.searching, d.err = true, ""
+	go func() {
+		res, err := matchSearch(q, 20)
+		a.post(func() {
+			d := &a.spot.matching
+			if d.seq != seq {
+				return // another search since
+			}
+			d.searching, d.searched = false, true
+			if err != nil {
+				d.err = spotErrText(err)
+				return
+			}
+			d.results = res
+		})
+	}()
+}
+
+// chooseSpotMatch keeps tr as the NetEase song of the Spotify song the
+// dialog asks about, and shows it among the page's songs, in its place.
+func (a *app) chooseSpotMatch(tr netease.Track) {
+	d := &a.spot.matching
+	if d.saving {
+		return
+	}
+	d.saving = true
+	page, t := d.page, d.track
+	go func() {
+		err := pinMatch(t.ID, tr.ID)
+		if err == nil {
+			if kept, ok := readSpotCache(page); ok {
+				writeSpotCache(page, kept.rematched(t, tr))
+			}
+		}
+		a.post(func() {
+			a.spot.matching.saving = false
+			if err != nil {
+				a.spot.matching.err = "没有记下：" + err.Error()
+				return
+			}
+			a.spot.matching.open = false
+			if pg := a.spot.pages[page]; pg != nil {
+				spotCacheOf(pg).rematched(t, tr).restore(pg)
+			}
+			a.toast = "已匹配到《" + tr.Name + "》"
+		})
+	}()
+}
+
+// rematched returns what was kept, with Spotify song t matched to NetEase
+// song tr: wherever t is in the playlist, its match is tr, in the
+// playlist's order, and t is no longer missing.
+func (k spotCache) rematched(t spotify.Track, tr netease.Track) spotCache {
+	byURI := map[string]netease.Track{}
+	for i, m := range k.Matched {
+		if i < len(k.From) {
+			byURI[k.From[i]] = m
+		}
+	}
+	byURI[t.URI] = tr
+	out := k
+	out.Matched, out.From = nil, nil
+	for _, s := range k.Tracks {
+		if m, ok := byURI[s.URI]; ok {
+			out.Matched = append(out.Matched, m)
+			out.From = append(out.From, s.URI)
+		}
+	}
+	out.Missing = slices.DeleteFunc(slices.Clone(k.Missing), func(s spotify.Track) bool { return s.URI == t.URI })
+	return out
+}
+
+// spotMatchView is the dialog that matches a song by hand.
+func (a *app) spotMatchView(c *ui.Context) {
+	p := a.pal
+	d := &a.spot.matching
+	ui.DialogBase(c.Key("spotify-match"), &d.open, func(backdrop, panel ui.Element) {
+		backdrop.Background(ui.RGBA(0, 0, 0, 0.35))
+		panel.Width(520).Padding(24).Radius(18).Gap(14).
+			Background(p.bg).Border(1, p.hairline).Shadow(0, 24, 60, -12, ui.RGBA(0, 0, 0, 0.4)).
+			Transition(ui.ElementTransition{Animation: &ui.Snappy, Enter: &ui.Motion{Scale: 0.94}, Exit: &ui.Motion{Scale: 0.96}})
+		ui.Column(c).Gap(4).Children(func() {
+			ui.Text(c, "手动匹配").FontSize(17).FontWeight(700)
+			sub := d.track.Name + " — " + d.track.ArtistNames()
+			if d.track.Duration > 0 {
+				sub += " · " + clock(d.track.Length())
+			}
+			ui.Text(c, "Spotify："+sub).FontSize(12.5).TextColor(p.muted).SingleLine()
+		})
+		field := ui.Row(c).Height(36).PaddingX(12).Gap(7).Radius(999).AlignItems(ui.Center).Background(p.hover).Border(1, p.hairline)
+		field.Children(func() {
+			ui.Icon(c, iconSearch).Size(14, 14).TextColor(p.muted)
+			in := ui.TextInputBase(c.Key("q"), &d.query).Grow(1).MinWidth(0).Placeholder("在网易云搜索").FontSize(13).Label("在网易云搜索").AutoFocus()
+			if in.Submitted() {
+				a.searchSpotMatch()
+			}
+			if d.query != "" {
+				iconButton(c.Key("clear"), iconX, 12, p.muted, "清除").KeepFocus().OnClick(func() { d.query = "" })
+			}
+		})
+		ui.Scroll(c.Key("results")).Height(340).Gap(2).Children(func() {
+			switch {
+			case d.searching && len(d.results) == 0:
+				ui.Text(c, "正在搜索…").FontSize(13).TextColor(p.muted).Padding(20, 8)
+			case d.err != "":
+				ui.Text(c, d.err).FontSize(13).TextColor(p.muted).Padding(20, 8).LineHeight(1.45)
+			case d.searched && len(d.results) == 0:
+				ui.Text(c, "没有搜到，换个关键词试试，比如只搜歌名，或者用中文歌手名").FontSize(13).TextColor(p.muted).Padding(20, 8).LineHeight(1.45)
+			}
+			for i := range d.results {
+				tr := d.results[i]
+				row := ui.ButtonBase(c.Key(tr.ID)).Height(54).PaddingX(10).Gap(12).Radius(10).AlignItems(ui.Center).FocusRing(false).Label(tr.Name + " " + tr.ArtistNames())
+				if row.Hovered() {
+					row.Background(p.hover)
+				}
+				if !tr.Playable() {
+					row.Opacity(0.5)
+				}
+				row.Children(func() {
+					a.cover(c, tr.Album.PicURL, 96, 38, 6)
+					ui.Column(c).Grow(3).Basis(0).MinWidth(0).Gap(3).Children(func() {
+						spans := []ui.Span{{Text: tr.Name, Weight: 500, Color: p.text}}
+						if len(tr.Alias) > 0 {
+							spans = append(spans, ui.Span{Text: "（" + tr.Alias[0] + "）", Color: p.faint})
+						}
+						ui.RichText(c, spans...).FontSize(14).SingleLine()
+						ui.Text(c, tr.ArtistNames()).FontSize(12.5).TextColor(p.muted).SingleLine()
+					})
+					ui.Text(c, tr.Album.Name).Grow(2).Basis(0).MinWidth(0).FontSize(12.5).TextColor(p.muted).SingleLine()
+					ui.Text(c, clock(tr.Length())).FontSize(12.5).FontFeatures("tnum").TextColor(p.faint).Width(40).TextAlign(ui.End)
+				})
+				if row.Clicked() {
+					a.chooseSpotMatch(tr)
+				}
+			}
+		})
+		ui.Row(c).Gap(10).AlignItems(ui.Center).Children(func() {
+			note := "点一首就记为这首歌的匹配，以后同步也按它来"
+			if d.saving {
+				note = "正在记下…"
+			}
+			ui.Text(c, note).FontSize(12).TextColor(p.faint).Grow(1)
+			if pillButton(c.Key("cancel"), nil, "取消", p.hover.Over(p.bg), p.text).Clicked() {
+				d.open = false
+			}
+		})
+	})
+}

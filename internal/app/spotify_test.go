@@ -300,3 +300,40 @@ func TestSpotifyPageSearchesAndSorts(t *testing.T) {
 		t.Errorf("played %v, want by name", q)
 	}
 }
+
+// Clicking a song NetEase didn't find opens a search for it; the song
+// chosen is kept as its match and takes its place among the page's songs.
+func TestSpotifyManualMatch(t *testing.T) {
+	searched := make(chan string, 1)
+	pinned := make(chan string, 1)
+	search, pin := matchSearch, pinMatch
+	defer func() { matchSearch, pinMatch = search, pin }()
+	matchSearch = func(q string, _ int) ([]netease.Track, error) {
+		searched <- q
+		return []netease.Track{{ID: 99, Name: "Three (Live)"}}, nil
+	}
+	pinMatch = func(sp string, ne int64) error { pinned <- fmt.Sprintf("%s %d", sp, ne); return nil }
+	a := spotApp()
+	pg := a.spot.pages["S"]
+	pg.tracks = []spotify.Track{{ID: "a", URI: "spotify:track:a"}, {ID: "c", URI: "spotify:track:c", Name: "Three"}, {ID: "b", URI: "spotify:track:b"}}
+	a.route = route{page: pageSpotify, query: "S"}
+	tt := ui.NewTester(a.view, 1200, 800)
+	tt.Frame()
+	if err := tt.Click("Three — "); err != nil {
+		t.Fatal(err)
+	}
+	if got := wait(t, searched, "the search"); got != "Three" {
+		t.Errorf("searched %q", got)
+	}
+	// The search's answer, as its post would bring it.
+	a.spot.matching.searching, a.spot.matching.results = false, []netease.Track{{ID: 99, Name: "Three (Live)"}}
+	tt.Frame()
+	a.chooseSpotMatch(a.spot.matching.results[0])
+	if got := wait(t, pinned, "the match kept"); got != "c 99" {
+		t.Errorf("pinned %q", got)
+	}
+	k := spotCacheOf(pg).rematched(pg.tracks[1], netease.Track{ID: 99})
+	if len(k.Matched) != 3 || k.Matched[1].ID != 99 || k.From[1] != "spotify:track:c" || len(k.Missing) != 0 {
+		t.Errorf("rematched %v %v, missing %v", k.Matched, k.From, k.Missing)
+	}
+}

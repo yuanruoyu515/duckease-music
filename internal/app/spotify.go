@@ -47,6 +47,7 @@ type spotState struct {
 	edit      spotEditDialog
 	importing spotImportDialog
 	choosing  spotChooseDialog
+	matching  spotMatchDialog
 }
 
 // spotPage is a Spotify playlist's page: its songs, and those NetEase has.
@@ -799,21 +800,30 @@ func (a *app) spotPageMenu(id, name string) func(m *ui.Menu) {
 	}
 }
 
-// spotMissing lists the songs NetEase hasn't, under those it has; their
-// menus take them out of the Spotify playlist id.
+// spotMissing lists the songs NetEase hasn't, under those it has: a click
+// matches one by hand, and their menus take them out of the Spotify
+// playlist id.
 func (a *app) spotMissing(c *ui.Context, id string, missing []spotify.Track) {
 	p := a.pal
 	editable := a.spotEditable(id)
 	ui.Column(c.Key("spotify-missing")).Padding(24, 12, 8, 12).Gap(2).Children(func() {
-		ui.Textf(c, "网易云没有找到的 %d 首", len(missing)).FontSize(12).FontWeight(600).TextColor(p.faint).Margin(0, 0, 4, 0)
+		ui.Row(c).Gap(8).AlignItems(ui.Center).Margin(0, 0, 4, 0).Children(func() {
+			ui.Textf(c, "网易云没有找到的 %d 首", len(missing)).FontSize(12).FontWeight(600).TextColor(p.faint)
+			ui.Text(c, "点一首可以手动匹配").FontSize(12).TextColor(p.faint)
+		})
 		for i := range missing {
 			t := missing[i]
 			label := t.Name + " — " + t.ArtistNames()
-			b := ui.ButtonBase(c.Key("miss-" + t.ID)).Height(26).PaddingX(6).Radius(6).AlignItems(ui.Center).Justify(ui.Start).FocusRing(false).Label(label)
-			if b.Hovered() {
+			b := ui.ButtonBase(c.Key("miss-" + t.ID)).Height(30).PaddingX(8).Gap(10).Radius(8).AlignItems(ui.Center).Justify(ui.Start).FocusRing(false).Label(label)
+			hovered := b.Hovered()
+			if hovered {
 				b.Background(p.hover)
 			}
 			b.ContextMenu(func(m *ui.Menu) {
+				if m.Item("手动匹配…").Chosen() {
+					a.openSpotMatch(id, t)
+				}
+				m.Separator()
 				if m.Item("复制歌名和歌手").Chosen() {
 					copyText(t.Name + " - " + t.ArtistNames())
 				}
@@ -829,8 +839,18 @@ func (a *app) spotMissing(c *ui.Context, id string, missing []spotify.Track) {
 				}
 			})
 			b.Children(func() {
-				ui.Text(c, label).FontSize(12.5).TextColor(p.muted).SingleLine()
+				ui.Text(c, label).FontSize(12.5).TextColor(p.muted).SingleLine().Shrink(1).MinWidth(0)
+				ui.Box(c).Grow(1)
+				if hovered {
+					ui.Row(c).Gap(5).AlignItems(ui.Center).Children(func() {
+						ui.Icon(c, iconSearch).Size(12, 12).TextColor(p.accent)
+						ui.Text(c, "手动匹配").FontSize(12).FontWeight(600).TextColor(p.accent)
+					})
+				}
 			})
+			if b.Clicked() {
+				a.openSpotMatch(id, t)
+			}
 		}
 	})
 }
@@ -933,7 +953,7 @@ func (a *app) spotSongItems(m *ui.Menu, tr *netease.Track) {
 			}
 		}
 	})
-	if here == "" || !a.spotEditable(here) {
+	if here == "" {
 		return
 	}
 	pg := a.spot.pages[here]
@@ -946,7 +966,18 @@ func (a *app) spotSongItems(m *ui.Menu, tr *netease.Track) {
 			uris = append(uris, pg.from[i])
 		}
 	}
-	if len(uris) > 0 && m.Item("从这个 Spotify 歌单移除").Chosen() {
+	if len(uris) == 0 {
+		return
+	}
+	if m.Item("匹配错了，手动改…").Chosen() {
+		for _, t := range pg.tracks {
+			if t.URI == uris[0] {
+				a.openSpotMatch(here, t)
+				break
+			}
+		}
+	}
+	if a.spotEditable(here) && m.Item("从这个 Spotify 歌单移除").Chosen() {
 		a.removeFromSpot(here, uris)
 	}
 }
