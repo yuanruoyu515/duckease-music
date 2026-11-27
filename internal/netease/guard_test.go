@@ -50,3 +50,26 @@ func TestGuardCoolsDownAfter460(t *testing.T) {
 		t.Errorf("second cooldown %v, want %v", wait, 2*firstCooldown)
 	}
 }
+
+// A search answered 405 holds searches, not edits, for searchHold, and
+// doubles their gap after; it was taken for a failure, and matching a
+// long Spotify playlist stopped there.
+func TestGuardSlowsSearchesAfter405(t *testing.T) {
+	clock := fakeGuard(t)
+	guarded(guardSearch, func() error {
+		return errors.New("netease: /api/cloudsearch/pc: code 405 操作频繁，请稍候再试")
+	})
+	if _, wait := Blocked(guarded(guardSearch, func() error { return nil })); wait != searchHold {
+		t.Fatalf("search held %v, want %v", wait, searchHold)
+	}
+	if err := guarded(guardEdit, func() error { return nil }); err != nil {
+		t.Errorf("an edit was held: %v", err)
+	}
+	*clock = clock.Add(searchHold)
+	guarded(guardSearch, func() error { return nil })
+	start := *clock
+	guarded(guardSearch, func() error { return nil })
+	if gap := clock.Sub(start); gap != 2*searchGap {
+		t.Errorf("gap after a 405 %v, want %v", gap, 2*searchGap)
+	}
+}

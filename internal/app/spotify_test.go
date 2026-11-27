@@ -1,6 +1,9 @@
 package app
 
 import (
+	"image/png"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/egoist/mygo/ui"
@@ -119,5 +122,37 @@ func TestLeavingSpotifyPageStopsMatching(t *testing.T) {
 	close(left)
 	if !wait(t, stopped, "the stop") {
 		t.Error("matching went on after the page was left")
+	}
+}
+
+// With NM_FRAMES set, saves a Spotify playlist's page as its songs are
+// found, the duck partway across, in light and dark.
+func TestSpotifyLoadingFrames(t *testing.T) {
+	dir := os.Getenv("NM_FRAMES")
+	if dir == "" {
+		t.Skip("NM_FRAMES not set")
+	}
+	for _, dark := range []bool{false, true} {
+		a := spotApp()
+		if dark {
+			a.settings.Appearance = "dark"
+		}
+		a.route = route{page: pageSpotify, query: "S"}
+		a.spot.pages = map[string]*spotPage{"S": {loading: true, done: 412, total: 1302}}
+		tt := ui.NewTester(a.view, 1200, 800)
+		tt.SetDark(dark)
+		for range 30 {
+			tt.Frame()
+		}
+		name := "spotify-loading-light.png"
+		if dark {
+			name = "spotify-loading-dark.png"
+		}
+		f, err := os.Create(filepath.Join(dir, name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		png.Encode(f, tt.Image())
+		f.Close()
 	}
 }

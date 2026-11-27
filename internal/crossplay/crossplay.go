@@ -33,7 +33,7 @@ var (
 // turns those away (-460), and Spotify counts a Development Mode
 // account's calls against one quota.
 var (
-	neteasePause = 200 * time.Millisecond
+	neteasePause = 800 * time.Millisecond
 	spotifyPause = 150 * time.Millisecond
 )
 

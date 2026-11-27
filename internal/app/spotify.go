@@ -57,7 +57,15 @@ type spotPage struct {
 	matched  []netease.Track // in the playlist's order
 	missing  []spotify.Track // those NetEase hasn't
 	pending  int             // those not looked for yet
+	// How far finding them on NetEase is, while it goes; resume is when
+	// it goes on, after NetEase asked it to wait.
+	done, total int
+	resume      time.Time
 }
+
+// spotWaits is how many times a page's matching waits out NetEase's
+// asking for fewer searches, before it gives up and offers to retry.
+const spotWaits = 8
 
 // The Spotify calls the app makes; tests replace them.
 var (
@@ -122,6 +130,8 @@ func spotErrText(err error) string {
 		return "Spotify 只允许读取你自己创建或参与协作的歌单"
 	case crossplay.Blocked(err):
 		return "网易云暂时拒绝了请求，已匹配的歌曲已记下，稍后再试"
+	case strings.HasPrefix(err.Error(), "netease:"):
+		return "网易云请求失败：" + strings.TrimPrefix(err.Error(), "netease: ")
 	case errors.As(err, &e) && e.Reason == "QUOTA_EXCEEDED":
 		return "Spotify 的调用额度用完了，稍后再试"
 	case errors.As(err, &e) && e.Status == 403:
@@ -335,15 +345,33 @@ func (a *app) loadSpotPage(id string, again bool) {
 		tracks, err := spotifyItems(id)
 		var ids []int64
 		looked := 0
-		if err == nil {
+		for waits := 0; err == nil || waits < spotWaits; waits++ {
+			if err != nil {
+				// NetEase asked for fewer searches: wait as long as it
+				// said, while the page shows, and go on where it stopped.
+				blocked, wait := netease.Blocked(err)
+				if !blocked || stop() {
+					break
+				}
+				wait = max(wait, 20*time.Second)
+				resume := time.Now().Add(wait)
+				a.post(func() { pg.resume = resume })
+				for time.Now().Before(resume) && !stop() {
+					time.Sleep(250 * time.Millisecond)
+				}
+				a.post(func() { pg.resume = time.Time{} })
+			}
 			ids, err = neteaseIDsOf(tracks, crossplay.Budget{
 				MaxSearches: spotSearches,
 				Stop:        stop,
 				Progress: func(done, total int) {
 					looked = done
-					a.post(func() { pg.progress = fmt.Sprintf("正在网易云匹配歌曲 %d/%d…", done, total) })
+					a.post(func() { pg.done, pg.total = done, total })
 				},
 			})
+			if err == nil || errors.Is(err, crossplay.ErrIncomplete) {
+				break
+			}
 		}
 		if errors.Is(err, crossplay.ErrIncomplete) {
 			if stop() {
@@ -397,11 +425,7 @@ func (a *app) spotifyPage(c *ui.Context) {
 		return
 	}
 	if pg == nil || pg.loading {
-		msg := "正在读取 Spotify 歌单…"
-		if pg != nil {
-			msg = pg.progress
-		}
-		a.centered(c, msg, nil)
+		a.spotLoading(c, pg)
 		return
 	}
 	if pg.err != "" && len(pg.matched) == 0 {

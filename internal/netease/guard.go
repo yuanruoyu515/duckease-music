@@ -38,13 +38,32 @@ const (
 	strikeWindow  = 10 * time.Minute
 )
 
+// Searches answered 405, 操作频繁 (too often): NetEase's search has a
+// rate of its own, below which the guard keeps them. Each 405 holds
+// searches for searchHold and doubles the gap between them, up to
+// maxSlow doublings; slowWindow after the last, the gap is back.
+const (
+	searchHold = 20 * time.Second
+	maxSlow    = 4
+	slowWindow = 10 * time.Minute
+)
+
 // CoolingError is a request not sent, while NetEase's risk control is
-// cooling down.
-type CoolingError struct{ Until time.Time }
+// cooling down, or its search asked for fewer.
+type CoolingError struct {
+	Until    time.Time
+	TooOften bool // a 405's, holding searches only
+}
 
 func (e *CoolingError) Error() string {
+	if e.TooOften {
+		return fmt.Sprintf("NetEase searched too often (405); searching again in %s", e.Until.Sub(now()).Round(time.Second))
+	}
 	return fmt.Sprintf("NetEase refused requests (-460); not asking again for %s", e.Until.Sub(now()).Round(time.Second))
 }
+
+// tooOften reports whether err is NetEase's 405, 操作频繁.
+func tooOften(err error) bool { return err != nil && strings.Contains(err.Error(), "code 405") }
 
 // Blocked reports whether err is NetEase's risk control: its -460, or a
 // request the guard held back for it. With it, wait says how long until
@@ -58,6 +77,9 @@ func Blocked(err error) (blocked bool, wait time.Duration) {
 	if errors.As(err, &r) && r.Blocked() {
 		return true, 0
 	}
+	if tooOften(err) {
+		return true, searchHold
+	}
 	return err != nil && strings.Contains(err.Error(), "code -460"), 0
 }
 
@@ -68,6 +90,11 @@ type guardState struct {
 	LastStrike   time.Time `json:"lastStrike"`
 	LastEdit     time.Time `json:"lastEdit"`
 	LastSearch   time.Time `json:"lastSearch"`
+	// After a 405: searches wait until SearchHeld, and their gap is
+	// doubled Slow times, until slowWindow after LastSlow.
+	SearchHeld time.Time `json:"searchHeld"`
+	Slow       int       `json:"slow"`
+	LastSlow   time.Time `json:"lastSlow"`
 }
 
 var (
@@ -132,7 +159,14 @@ func guarded(kind guardKind, fn func() error) error {
 	}
 	last, gap := &s.LastEdit, editGap
 	if kind == guardSearch {
-		last, gap = &s.LastSearch, searchGap
+		if t.Before(s.SearchHeld) {
+			guardMu.Unlock()
+			return &CoolingError{Until: s.SearchHeld, TooOften: true}
+		}
+		if t.Sub(s.LastSlow) > slowWindow {
+			s.Slow = 0
+		}
+		last, gap = &s.LastSearch, searchGap<<s.Slow
 	}
 	if wait := last.Add(gap).Sub(t); wait > 0 {
 		sleep(wait)
@@ -143,10 +177,27 @@ func guarded(kind guardKind, fn func() error) error {
 	guardMu.Unlock()
 
 	err := fn()
-	if b, _ := Blocked(err); b {
+	switch b, _ := Blocked(err); {
+	case kind == guardSearch && tooOften(err):
+		slowSearches()
+	case b:
 		trip()
 	}
 	return err
+}
+
+// slowSearches holds searches a while after a 405, and spaces them more.
+func slowSearches() {
+	guardMu.Lock()
+	defer guardMu.Unlock()
+	s := loadGuard()
+	t := now()
+	if t.Before(s.SearchHeld) {
+		return
+	}
+	s.Slow = min(s.Slow+1, maxSlow)
+	s.SearchHeld, s.LastSlow = t.Add(searchHold), t
+	saveGuard(s)
 }
 
 // trip starts a cooldown, after NetEase answered -460, to any request.
