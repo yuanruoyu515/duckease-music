@@ -144,7 +144,10 @@ func TestSpotifyPageOpensAsKept(t *testing.T) {
 	defer func() { spotifyItems, neteaseIDsOf, readSpotCache = items, find, read }()
 	a := spotApp()
 	kept := make(chan string, 1)
-	readSpotCache = func(id string) (spotCache, bool) { kept <- id; return spotCache{Tracks: make([]spotify.Track, 2)}, true }
+	readSpotCache = func(id string) (spotCache, bool) {
+		kept <- id
+		return spotCache{Tracks: make([]spotify.Track, 2)}, true
+	}
 	asked := make(chan string, 2)
 	spotifyItems = func(id string) ([]spotify.Track, error) { asked <- "spotify"; return nil, nil }
 	neteaseIDsOf = func([]spotify.Track, crossplay.Budget) ([]int64, error) { asked <- "netease"; return nil, nil }

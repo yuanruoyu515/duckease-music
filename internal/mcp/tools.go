@@ -30,6 +30,17 @@ var (
 	likeSong        = netease.Like
 )
 
+// matchPause is the wait between the searches of a match, so that
+// NetEase's search doesn't answer 405, too often, partway through.
+var matchPause = 600 * time.Millisecond
+
+// tooOften reports whether err is NetEase holding searches after a 405,
+// which passes in seconds, not its -460.
+func tooOften(err error) bool {
+	var c *netease.CoolingError
+	return errors.As(err, &c) && c.TooOften || err != nil && strings.Contains(err.Error(), "code 405")
+}
+
 // pause is the wait between requests of a batch, as the app's bulk edits
 // wait, so that NetEase's risk control doesn't see a burst. netease's
 // guard also spaces edits and searches, across calls and processes.
@@ -467,13 +478,28 @@ func matchSongs(args json.RawMessage) (string, error) {
 	var b strings.Builder
 	b.WriteString("n\tid\tscore\ttitle\tartists\n")
 	found := 0
+	ctx := current()
 	for i, line := range a.Songs {
+		if i > 0 {
+			if ctx.over() {
+				fmt.Fprintf(&b, "stopped at line %d to answer in time; matched %d/%d so far. Call match again with lines %d-%d.\n", i+1, found, i, i+1, len(a.Songs))
+				return b.String(), nil
+			}
+			time.Sleep(matchPause)
+		}
+		ctx.tell(i, len(a.Songs), "matching")
 		t, score, err := crossplay.FindNetease(match.Parse(line))
+		// NetEase asking for fewer searches holds them for a few seconds:
+		// wait that out, once, when the call has the time.
+		if blocked, wait := netease.Blocked(err); blocked && wait > 0 && wait < 30*time.Second && ctx.left() > wait+5*time.Second && tooOften(err) {
+			time.Sleep(wait + 500*time.Millisecond)
+			t, score, err = crossplay.FindNetease(match.Parse(line))
+		}
 		switch {
 		case err != nil:
 			fmt.Fprintf(&b, "%d\t-\t\terror: %s\n", i+1, clean(err.Error()))
 			if blocked, _ := netease.Blocked(err); blocked {
-				fmt.Fprintf(&b, "stopped at line %d: %s\n", i+1, coolingNote(err))
+				fmt.Fprintf(&b, "stopped at line %d: %s Then call match again with lines %d-%d.\n", i+1, coolingNote(err), i+1, len(a.Songs))
 				return b.String(), nil
 			}
 		case t == nil:

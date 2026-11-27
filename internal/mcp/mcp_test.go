@@ -141,3 +141,68 @@ func TestIDFromLink(t *testing.T) {
 		t.Errorf("got %d, %v", got, err)
 	}
 }
+
+// Matching stops when the call's time is up, saying which lines are left,
+// so that the client gets its answer before it gives up waiting.
+func TestMatchStopsInTime(t *testing.T) {
+	fake(t)
+	budget, mp := callBudget, matchPause
+	defer func() { callBudget, matchPause = budget, mp }()
+	callBudget, matchPause = 0, 0
+	asked := 0
+	find := crossplay.SearchNetease
+	defer func() { crossplay.SearchNetease = find }()
+	crossplay.SearchNetease = func(string, int) ([]netease.Track, error) { asked++; return nil, nil }
+	text, isErr := callTool(t, "match", map[string]any{"songs": []string{"a - x", "b - y", "c - z"}})
+	if isErr || asked != 1 || !strings.Contains(text, "lines 2-3") {
+		t.Errorf("asked %d times: %s", asked, text)
+	}
+}
+
+// NetEase holding searches for a few seconds after a 405 is waited out
+// within the call, not handed to the agent as an error.
+func TestMatchWaitsOutTooOften(t *testing.T) {
+	fake(t)
+	mp := matchPause
+	defer func() { matchPause = mp }()
+	matchPause = 0
+	asked := 0
+	find := crossplay.SearchNetease
+	defer func() { crossplay.SearchNetease = find }()
+	crossplay.SearchNetease = func(string, int) ([]netease.Track, error) {
+		asked++
+		if asked == 1 {
+			return nil, &netease.CoolingError{Until: time.Now().Add(10 * time.Millisecond), TooOften: true}
+		}
+		return []netease.Track{{ID: 5, Name: "a", Artists: []netease.Artist{{Name: "x"}}}}, nil
+	}
+	text, _ := callTool(t, "match", map[string]any{"songs": []string{"a - x"}})
+	if asked != 2 || !strings.Contains(text, "matched 1/1") {
+		t.Errorf("asked %d times: %s", asked, text)
+	}
+}
+
+// A call that runs past its limit is answered with an error, and the
+// call after it, while it still runs, is told so at once rather than
+// waiting behind it, as a sync stuck for five minutes made a status
+// check wait too.
+func TestStuckCallDoesNotHoldOthers(t *testing.T) {
+	fake(t)
+	limit, wait := callLimit, busyWait
+	defer func() { callLimit, busyWait = limit, wait }()
+	callLimit, busyWait = 50*time.Millisecond, 20*time.Millisecond
+	release := make(chan struct{})
+	defer close(release)
+	searchSongs = func(string, int) ([]netease.Track, error) { <-release; return nil, nil }
+	in := strings.NewReader(`{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"search","arguments":{"query":"a"}}}
+{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"playlists"}}
+`)
+	var out bytes.Buffer
+	if err := Serve(in, &out, "test"); err != nil {
+		t.Fatal(err)
+	}
+	lines := strings.Split(strings.TrimSpace(out.String()), "\n")
+	if len(lines) != 2 || !strings.Contains(lines[0], "took over") || !strings.Contains(lines[1], "still running") {
+		t.Errorf("replies:\n%s", out.String())
+	}
+}

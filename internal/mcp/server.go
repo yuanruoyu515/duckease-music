@@ -48,13 +48,15 @@ type response struct {
 
 // Serve answers the requests read from in on out until in ends. Tools
 // run one at a time, in the order asked, so that NetEase sees no bursts;
-// a ping or a list of the tools is answered meanwhile, and a call the
-// client cancels before it starts doesn't run.
+// a ping or a list of the tools is answered meanwhile, a call the client
+// cancels before it starts doesn't run, and one it cancels while it runs
+// stops at its next song. A call that runs past callLimit is answered
+// with an error, and those after it, while it still runs, are told so.
 func Serve(in io.Reader, out io.Writer, version string) error {
 	s := &server{version: version, tools: newTools()}
 	enc := json.NewEncoder(out)
 	var mu sync.Mutex
-	send := func(r response) {
+	send := func(r any) {
 		mu.Lock()
 		defer mu.Unlock()
 		if err := enc.Encode(r); err != nil {
@@ -63,10 +65,15 @@ func Serve(in io.Reader, out io.Writer, version string) error {
 	}
 	var cancelMu sync.Mutex
 	cancelled := map[string]bool{}
+	var running *callCtx // the call under way, which a cancel stops
+	var runningID string
 	calls := make(chan request, 64)
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
+		var stuck chan struct{} // closed when a call past callLimit ends
+		var stuckName string
+		var stuckSince time.Time
 		for req := range calls {
 			cancelMu.Lock()
 			skip := cancelled[string(req.ID)]
@@ -75,8 +82,48 @@ func Serve(in io.Reader, out io.Writer, version string) error {
 			if skip {
 				continue
 			}
-			result, rerr := s.handle(req)
-			send(response{JSONRPC: "2.0", ID: req.ID, Result: result, Error: rerr})
+			if stuck != nil {
+				select {
+				case <-stuck:
+					stuck = nil
+				case <-time.After(busyWait):
+					msg := fmt.Sprintf("error: the earlier call %s is still running (%s so far), maybe waiting on a keychain dialog on the user's Mac or on NetEase. Wait a minute and try again; don't repeat write calls before checking what they did.", stuckName, time.Since(stuckSince).Round(time.Second))
+					send(response{JSONRPC: "2.0", ID: req.ID, Result: errorResult(msg)})
+					continue
+				}
+			}
+			ctx := &callCtx{deadline: time.Now().Add(callBudget)}
+			if token := progressToken(req.Params); token != nil {
+				ctx.progress = func(done, total int, message string) {
+					send(map[string]any{"jsonrpc": "2.0", "method": "notifications/progress", "params": map[string]any{
+						"progressToken": token, "progress": done, "total": total, "message": message,
+					}})
+				}
+			}
+			cancelMu.Lock()
+			running, runningID = ctx, string(req.ID)
+			cancelMu.Unlock()
+			finished := make(chan struct{})
+			var result any
+			var rerr *rpcError
+			go func() {
+				defer close(finished)
+				setActive(ctx)
+				defer setActive(nil)
+				result, rerr = s.handle(req)
+			}()
+			select {
+			case <-finished:
+				send(response{JSONRPC: "2.0", ID: req.ID, Result: result, Error: rerr})
+			case <-time.After(callLimit):
+				stuck, stuckName, stuckSince = finished, toolName(req.Params), time.Now().Add(-callLimit)
+				ctx.cancelled.Store(true) // stop at its next song, if it gets to one
+				msg := fmt.Sprintf("error: %s took over %s and was told to stop; it may still finish what it was doing. Check the playlists before calling it again.", stuckName, callLimit)
+				send(response{JSONRPC: "2.0", ID: req.ID, Result: errorResult(msg)})
+			}
+			cancelMu.Lock()
+			running, runningID = nil, ""
+			cancelMu.Unlock()
 		}
 	}()
 	defer func() {
@@ -102,7 +149,11 @@ func Serve(in io.Reader, out io.Writer, version string) error {
 			}
 			json.Unmarshal(req.Params, &p)
 			cancelMu.Lock()
-			cancelled[string(p.RequestID)] = true
+			if running != nil && runningID == string(p.RequestID) {
+				running.cancelled.Store(true)
+			} else {
+				cancelled[string(p.RequestID)] = true
+			}
 			cancelMu.Unlock()
 			continue
 		case req.Method == "tools/call" && len(req.ID) > 0:
@@ -116,6 +167,31 @@ func Serve(in io.Reader, out io.Writer, version string) error {
 		send(response{JSONRPC: "2.0", ID: req.ID, Result: result, Error: rerr})
 	}
 	return sc.Err()
+}
+
+// progressToken returns the token a call asked progress notifications
+// with, or nil.
+func progressToken(params json.RawMessage) any {
+	var p struct {
+		Meta struct {
+			ProgressToken any `json:"progressToken"`
+		} `json:"_meta"`
+	}
+	json.Unmarshal(params, &p)
+	return p.Meta.ProgressToken
+}
+
+// toolName returns the name of the tool a call asks for.
+func toolName(params json.RawMessage) string {
+	var p struct {
+		Name string `json:"name"`
+	}
+	json.Unmarshal(params, &p)
+	return p.Name
+}
+
+func errorResult(msg string) map[string]any {
+	return map[string]any{"content": []map[string]any{{"type": "text", "text": msg}}, "isError": true}
 }
 
 type server struct {
@@ -188,7 +264,7 @@ func call(t tool, args json.RawMessage) map[string]any {
 		if blocked, _ := netease.Blocked(err); blocked {
 			msg = "error: " + coolingNote(err)
 		}
-		return map[string]any{"content": []map[string]any{{"type": "text", "text": msg}}, "isError": true}
+		return errorResult(msg)
 	}
 	return map[string]any{"content": []map[string]any{{"type": "text", "text": text}}}
 }
@@ -200,11 +276,15 @@ func coolingNote(err error) string {
 	if wait <= 0 {
 		wait = time.Minute
 	}
+	if tooOften(err) {
+		return fmt.Sprintf("NetEase says searches come too often (405). Make no NetEase searches for %s, then go on; other calls work meanwhile. Work already done stays done.", wait.Round(time.Second))
+	}
 	return fmt.Sprintf("NetEase risk control (-460) is refusing requests. Make no NetEase calls for %s, then try again; don't retry sooner, it lengthens the block. Work already done stays done.", wait.Round(time.Second))
 }
 
 const instructions = `Manage the user's NetEase Cloud Music (网易云音乐) playlists in DuckEase Music.
 Replies are tab-separated lines with a header; song lines are: id, title, artists, album, length; "!" before an id marks a song the user can't stream.
 Work by id: list playlists, read one (use query to filter instead of reading long lists), find songs with search or match (match takes many "title - artist" lines at once), then add, remove or move by id.
-Spotify tools (spotify_*, sync_*) work once Spotify is connected in the app's settings; Spotify lets them read the songs only of playlists the user made or collaborates on. Syncing only adds songs.
+Spotify tools (spotify_*, sync_*) work once Spotify is connected in the app's settings. Playlist id "liked" is the user's Spotify Liked Songs; of playlists others made only the first 100 songs can be read, and only the user's own or collaborative ones changed. Syncing only adds songs.
+Long calls (match, sync_playlist, spotify_import) stop after about 45 seconds so the reply comes in time, keeping what they found; call again as the reply says.
 Write tools change the user's real account. NetEase's risk control (-460) watches bursts: the server spaces every request and stops all of them for a while after a -460, saying how long; wait that long. Prefer one call with many ids over many calls with one, and don't call tools in parallel.`

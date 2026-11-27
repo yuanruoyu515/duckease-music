@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	"netease-music-mygo/internal/crossplay"
@@ -14,11 +15,10 @@ import (
 // Tools for the listener's Spotify playlists, and for keeping them in
 // step with NetEase. Connecting to Spotify happens in the app's settings.
 
-// syncSearches bounds the songs one call looks for, about half a second
-// each: a client gives up on a call after a minute or so, while the
-// server would go on changing the account. What a call found is kept,
-// and the next call picks up there.
-const syncSearches = 60
+// A call looks for songs for callBudget, about a second each: a client
+// gives up on a call after a minute or so, while the server would go on
+// changing the account. What a call found is kept, and the next call
+// picks up there.
 
 // maxMissing is how many songs a reply lists as missing, the rest
 // counted.
@@ -46,7 +46,7 @@ func spotifyTools() []tool {
 		},
 		{
 			name: "spotify_import", title: "Copy a Spotify playlist to NetEase",
-			description: fmt.Sprintf("Create a NetEase playlist for a Spotify playlist and link the two, then sync them as sync_playlist does. Songs are found by title, artist and length, at most %d new ones a call: when the reply says to, call sync_playlist to go on.", syncSearches),
+			description: "Create a NetEase playlist for a Spotify playlist and link the two, then sync them as sync_playlist does. Songs are found by title, artist and length, for about 45 seconds a call: when the reply says to, call sync_playlist to go on.",
 			params:      map[string]any{"id": strParam("Spotify playlist id, URI or link"), "name": strParam("NetEase playlist name; default the Spotify one's")},
 			required:    []string{"id"},
 			run:         spotifyImport,
@@ -65,7 +65,7 @@ func spotifyTools() []tool {
 		},
 		{
 			name: "sync_playlist", title: "Sync linked playlists",
-			description: fmt.Sprintf("Bring songs across a linked pair (to-netease, to-spotify or both; default the pair's). Only adds, never removes, and doesn't put back songs the user removed since the last sync. Finds at most %d new songs a call and adds nothing until all are found: call again while the reply says to. Pass netease_id to link a new pair first.", syncSearches),
+			description: "Bring songs across a linked pair (to-netease, to-spotify or both; default the pair's). Only adds, never removes, and doesn't put back songs the user removed since the last sync. Looks for songs for about 45 seconds a call and adds nothing until all are found: call again while the reply says to. Pass netease_id to link a new pair first. spotify_id \"liked\" is the user's Spotify Liked Songs.",
 			params: map[string]any{
 				"spotify_id": strParam("Spotify playlist id, URI or link"),
 				"netease_id": intParam("the user's NetEase playlist id, to link a new pair"),
@@ -73,6 +73,27 @@ func spotifyTools() []tool {
 			},
 			required: []string{"spotify_id"},
 			run:      syncPlaylist,
+		},
+		{
+			name: "spotify_search", title: "Search Spotify", readOnly: true,
+			description: "Search Spotify for songs (at most 10 results, Spotify's limit for the user's app). Lines: uri, title, artists, album, length.",
+			params:      map[string]any{"query": strParam("keywords; track:NAME artist:NAME narrows it")},
+			required:    []string{"query"},
+			run:         spotifySearch,
+		},
+		{
+			name: "spotify_add_songs", title: "Add songs to a Spotify playlist",
+			description: "Add songs, by Spotify track URI or id, to the end of one of the user's own or collaborative Spotify playlists; playlist \"liked\" likes them. Songs the playlist has are skipped.",
+			params:      map[string]any{"id": strParam("Spotify playlist id, URI or link, or liked"), "uris": map[string]any{"type": "array", "items": map[string]any{"type": "string"}, "description": "track URIs or ids, up to 200"}},
+			required:    []string{"id", "uris"},
+			run:         func(a json.RawMessage) (string, error) { return spotifyEdit(a, true) },
+		},
+		{
+			name: "spotify_remove_songs", title: "Remove songs from a Spotify playlist", destructive: true,
+			description: "Remove songs, by Spotify track URI or id, from one of the user's own or collaborative Spotify playlists; playlist \"liked\" unlikes them.",
+			params:      map[string]any{"id": strParam("Spotify playlist id, URI or link, or liked"), "uris": map[string]any{"type": "array", "items": map[string]any{"type": "string"}, "description": "track URIs or ids, up to 200"}},
+			required:    []string{"id", "uris"},
+			run:         func(a json.RawMessage) (string, error) { return spotifyEdit(a, false) },
 		},
 		{
 			name: "fix_match", title: "Correct a song's NetEase match",
@@ -132,8 +153,17 @@ func spotifyPlaylists() (string, error) {
 	}
 	var b strings.Builder
 	b.WriteString("id\tname\tsongs\tkind\tnetease\n")
+	if !spotify.NeedsReconnect() {
+		if n, err := spotify.LikedCount(); err == nil {
+			ne := "-"
+			if id, ok := linked[spotify.LikedID]; ok {
+				ne = fmt.Sprint(id)
+			}
+			fmt.Fprintf(&b, "%s\tLiked Songs\t%d\tliked\t%s\n", spotify.LikedID, n, ne)
+		}
+	}
 	for _, p := range lists {
-		kind := "followed"
+		kind := "followed (first 100 songs readable)"
 		switch {
 		case p.Owner.ID == user:
 			kind = "mine"
@@ -233,16 +263,23 @@ func report(r crossplay.Report) string {
 	return b.String()
 }
 
-// budget bounds one call's searches, and counts how far they got.
+// budget bounds one call's searches by its time, and counts how far they
+// got, telling the client as they go.
 func budget(at *[2]int) crossplay.Budget {
-	return crossplay.Budget{MaxSearches: syncSearches, Progress: func(done, total int) { at[0], at[1] = done, total }}
+	ctx := current()
+	return crossplay.Budget{Stop: ctx.over, Progress: func(done, total int) {
+		at[0], at[1] = done, total
+		if done%10 == 0 || done == total {
+			ctx.tell(done, total, "finding songs")
+		}
+	}}
 }
 
 // outcome says what a sync did, or how far it got and what to do next.
 func outcome(r crossplay.Report, err error, at [2]int, spotifyID string) (string, error) {
 	switch {
 	case errors.Is(err, crossplay.ErrIncomplete):
-		return fmt.Sprintf("songs found so far: %d of %d; nothing added yet. Call sync_playlist with spotify_id %s to go on.\n", at[0], at[1], spotifyID), nil
+		return fmt.Sprintf("songs found so far: %d of %d; nothing added yet (each call looks for about %s, so that it answers in time). Call sync_playlist with spotify_id %s to go on; matches found are kept.\n", at[0], at[1], callBudget, spotifyID), nil
 	case crossplay.Blocked(err):
 		return "", err // the server says how long to wait
 	case err != nil:
@@ -412,4 +449,106 @@ func fixMatch(args json.RawMessage) (string, error) {
 		return fmt.Sprintf("%s: marked as not on NetEase\n", track), nil
 	}
 	return fmt.Sprintf("%s → %d\n", track, a.Netease), nil
+}
+
+func spotifySearch(args json.RawMessage) (string, error) {
+	var a struct{ Query string }
+	if err := json.Unmarshal(args, &a); err != nil {
+		return "", err
+	}
+	if _, err := spotifyUser(); err != nil {
+		return "", err
+	}
+	tracks, err := spotify.Search(a.Query, 10)
+	if err != nil {
+		return "", err
+	}
+	var b strings.Builder
+	b.WriteString("uri\ttitle\tartists\talbum\tlength\n")
+	for _, t := range tracks {
+		secs := t.Duration / 1000
+		fmt.Fprintf(&b, "%s\t%s\t%s\t%s\t%d:%02d\n", t.URI, clean(t.Name), clean(t.ArtistNames()), clean(t.Album.Name), secs/60, secs%60)
+	}
+	if len(tracks) == 0 {
+		b.WriteString("(nothing found)\n")
+	}
+	return b.String(), nil
+}
+
+// trackURI takes a Spotify track URI from a URI, an id or a link.
+func trackURI(s string) string {
+	id := spotifyID(s)
+	if id == "" {
+		return ""
+	}
+	return "spotify:track:" + id
+}
+
+func spotifyEdit(args json.RawMessage, add bool) (string, error) {
+	var a struct {
+		ID   string   `json:"id"`
+		URIs []string `json:"uris"`
+	}
+	if err := json.Unmarshal(args, &a); err != nil {
+		return "", err
+	}
+	user, err := spotifyUser()
+	if err != nil {
+		return "", err
+	}
+	if err := tooMany(len(a.URIs), maxEdit, "songs"); err != nil {
+		return "", err
+	}
+	id := spotifyID(a.ID)
+	if !spotify.IsLiked(id) {
+		lists, err := spotify.Playlists()
+		if err != nil {
+			return "", err
+		}
+		i := slices.IndexFunc(lists, func(p spotify.Playlist) bool { return p.ID == id })
+		switch {
+		case i < 0:
+			return "", fmt.Errorf("no Spotify playlist %s among the user's; call spotify_playlists", id)
+		case !lists[i].Editable(user):
+			return "", errors.New("only the user's own or collaborative Spotify playlists can be changed")
+		}
+	}
+	var uris []string
+	seen := map[string]bool{}
+	for _, u := range a.URIs {
+		if u = trackURI(u); u != "" && !seen[u] {
+			seen[u] = true
+			uris = append(uris, u)
+		}
+	}
+	if len(uris) == 0 {
+		return "", errors.New("no track URIs")
+	}
+	if !add {
+		if err := spotify.RemoveItems(id, uris); err != nil {
+			return "", err
+		}
+		return fmt.Sprintf("removed %d songs\n", len(uris)), nil
+	}
+	have, err := spotify.PlaylistItems(id)
+	if err != nil {
+		return "", err
+	}
+	for _, t := range have {
+		if seen[t.URI] {
+			seen[t.URI] = false
+		}
+	}
+	var fresh []string
+	for _, u := range uris {
+		if seen[u] {
+			fresh = append(fresh, u)
+		}
+	}
+	if len(fresh) > 0 {
+		if err := spotify.AddItems(id, fresh); err != nil {
+			return "", err
+		}
+	}
+	return fmt.Sprintf("added %d songs (%d were there already)\n", len(fresh), len(uris)-len(fresh)), nil
 }
