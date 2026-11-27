@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 	"image/draw"
@@ -510,5 +511,23 @@ func TestLikeKeepsLikedPlaylistLoaded(t *testing.T) {
 	}
 	if len(pl.Tracks) != 2 || pl.Tracks[0].ID != 1 {
 		t.Error("the playlist shown was changed in place")
+	}
+}
+
+// With a playlist chosen in the settings, hearting a song adds it there
+// too; unhearting doesn't take it out.
+func TestHeartAlsoAdds(t *testing.T) {
+	added := make(chan string, 2)
+	like, add := likeSong, addToPlaylist
+	defer func() { likeSong, addToPlaylist = like, add }()
+	likeSong = func(int64, bool) error { return nil }
+	addToPlaylist = func(pid int64, songs ...int64) error { added <- fmt.Sprint(pid, songs); return nil }
+	a := newTestApp()
+	a.settings = defaultSettings()
+	a.settings.HeartAlso, a.settings.HeartAlsoName = "ne:7", "公路"
+	a.profile = &netease.Profile{UserID: 1}
+	a.heartAlso(netease.Track{ID: 5})
+	if got := wait(t, added, "the add"); got != "7 [5]" {
+		t.Errorf("added %q", got)
 	}
 }

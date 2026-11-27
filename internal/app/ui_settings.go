@@ -131,6 +131,7 @@ func (a *app) settingsView(c *ui.Context) {
 			if s.Fallback {
 				a.fallbackQuota(c, p)
 			}
+			a.heartAlsoRow(c, row)
 			row("显示评论", "在播放页显示歌曲评论；关闭后不再加载评论，间奏热评也一并关闭", func() {
 				show := !s.HideComments
 				if ui.Switch(c.Key("comments"), &show).Label("显示评论").Changed() {

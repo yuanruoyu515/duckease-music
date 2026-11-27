@@ -2,6 +2,7 @@ package app
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -685,4 +686,101 @@ func (a *app) spotMatchView(c *ui.Context) {
 			}
 		})
 	})
+}
+
+// heartTarget is a playlist a hearted song may also go to.
+type heartTarget struct {
+	key, label, name string
+}
+
+// heartTargets are the playlists the settings offer for a hearted song
+// to go to as well: the listener's own NetEase playlists, then their
+// Spotify ones they may add to.
+func (a *app) heartTargets() []heartTarget {
+	out := []heartTarget{{"", "不添加", ""}}
+	for _, pl := range a.mine {
+		if pl.SpecialType == 5 {
+			continue
+		}
+		out = append(out, heartTarget{fmt.Sprintf("ne:%d", pl.ID), "网易云：" + pl.Name, pl.Name})
+	}
+	if a.spot.user != "" {
+		for _, pl := range a.spotAll() {
+			if !pl.Editable(a.spot.user) || spotify.IsLiked(pl.ID) && a.spot.reconnect {
+				continue
+			}
+			out = append(out, heartTarget{"sp:" + pl.ID, "Spotify：" + pl.Name, pl.Name})
+		}
+	}
+	// The one chosen, before its lists load.
+	if k := a.settings.HeartAlso; k != "" && !slices.ContainsFunc(out, func(t heartTarget) bool { return t.key == k }) {
+		prefix := "网易云："
+		if strings.HasPrefix(k, "sp:") {
+			prefix = "Spotify："
+		}
+		out = append(out, heartTarget{k, prefix + a.settings.HeartAlsoName, a.settings.HeartAlsoName})
+	}
+	// Labels name the choice: two playlists of one name keep apart.
+	seen := map[string]int{}
+	for i := range out {
+		seen[out[i].label]++
+		if n := seen[out[i].label]; n > 1 {
+			out[i].label = fmt.Sprintf("%s (%d)", out[i].label, n)
+		}
+	}
+	return out
+}
+
+// heartAlsoRow is the settings' row choosing where a hearted song also
+// goes.
+func (a *app) heartAlsoRow(c *ui.Context, row func(string, string, func())) {
+	s := &a.settings
+	row("点红心时同时添加到", "点红心或按 ⌘D 喜欢一首歌时，同时把它加进这个歌单。选 Spotify 歌单会先在 Spotify 上找到对应的那首再加；取消红心不会从这个歌单移除", func() {
+		targets := a.heartTargets()
+		labels := make([]string, len(targets))
+		chosen := targets[0].label
+		for i, t := range targets {
+			labels[i] = t.label
+			if t.key == s.HeartAlso {
+				chosen = t.label
+			}
+		}
+		if ui.Select(c.Key("heart-also"), &chosen, labels).Label("点红心时同时添加到").Width(220).Changed() {
+			for _, t := range targets {
+				if t.label == chosen {
+					s.HeartAlso, s.HeartAlsoName = t.key, t.name
+				}
+			}
+			a.changed()
+		}
+	})
+}
+
+// heartAlso adds song, just hearted, to the playlist the settings chose,
+// if any.
+func (a *app) heartAlso(song netease.Track) {
+	key, name := a.settings.HeartAlso, a.settings.HeartAlsoName
+	switch {
+	case strings.HasPrefix(key, "ne:"):
+		var pid int64
+		fmt.Sscan(strings.TrimPrefix(key, "ne:"), &pid)
+		if pid == 0 {
+			return
+		}
+		go func() {
+			err := addToPlaylist(pid, song.ID)
+			a.post(func() {
+				switch {
+				case errors.Is(err, netease.ErrInPlaylist):
+				case err != nil:
+					a.toast = "已喜欢，但没能加进「" + name + "」：" + spotErrText(err)
+				default:
+					a.toast = "已喜欢，并加进了「" + name + "」"
+					a.playlistChanged(pid)
+				}
+			})
+		}()
+	case strings.HasPrefix(key, "sp:") && a.spot.user != "":
+		a.addToSpot(strings.TrimPrefix(key, "sp:"), name, &song)
+	}
 }

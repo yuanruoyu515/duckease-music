@@ -623,6 +623,9 @@ func (a *app) spotTracks(pg *spotPage) []netease.Track {
 	if f.spot == "" || f.id != 0 {
 		return pg.matched
 	}
+	if f.sort == sortNotLiked {
+		return f.unliked.tracks(pg.matched, a.liked)
+	}
 	return f.order.tracks(pg.matched, f.sort, f.luck)
 }
 
@@ -709,7 +712,7 @@ func (a *app) spotHeader(c *ui.Context, id string, pl *spotify.Playlist, pg *spo
 					a.pl.PlayQueue(tracks, firstPlayable(tracks))
 				}
 				if pillButton(c.Key("shuffle"), iconShuffle, "随机播放", p.hover.Over(p.bg), p.text).Clicked() && len(pg.matched) > 0 {
-					a.pl.PlayShuffled(pg.matched)
+					a.pl.PlayShuffled(a.spotTracks(pg))
 				}
 				label := "更新"
 				if pg.loading {
@@ -907,6 +910,13 @@ func (a *app) addToSpot(id, name string, tr *netease.Track) {
 		if err == nil && (len(uris) == 0 || uris[0] == "") {
 			a.post(func() { a.toast = "Spotify 上没有找到《" + t.Name + "》" })
 			return
+		}
+		if err == nil && !spotify.IsLiked(id) {
+			// Already in it, as the page last read it: not again.
+			if kept, ok := readSpotCache(id); ok && slices.ContainsFunc(kept.Tracks, func(s spotify.Track) bool { return s.URI == uris[0] }) {
+				a.post(func() { a.toast = "《" + t.Name + "》已经在「" + name + "」里了" })
+				return
+			}
 		}
 		if err == nil {
 			err = spotifyAdd(id, uris[:1])

@@ -61,6 +61,12 @@ type settings struct {
 	// Sidebar is the order of the sidebar's sections, and those hidden
 	// (sideItem); nil for the first order, all shown.
 	Sidebar []sideItem `json:"sidebar,omitempty"`
+	// HeartAlso is the playlist a song also goes to when the listener
+	// hearts it: "ne:<id>" for one of their NetEase playlists, "sp:<id>"
+	// for a Spotify one (sp:liked for Spotify's Liked Songs), "" for none.
+	// HeartAlsoName is its name, shown before the lists load.
+	HeartAlso     string `json:"heartAlso,omitempty"`
+	HeartAlsoName string `json:"heartAlsoName,omitempty"`
 	// SpotifyHidden are the Spotify playlists, by id ("liked" for Liked
 	// Songs), the listener chose not to show in the sidebar.
 	SpotifyHidden []string `json:"spotifyHidden,omitempty"`

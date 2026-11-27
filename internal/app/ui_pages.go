@@ -254,6 +254,7 @@ func (a *app) playlistPage(c *ui.Context) {
 	if f.id != id {
 		*f = plFilter{id: id}
 	}
+	f.liked = a.liked
 	p := a.pal
 	tracks := f.tracks(pl)
 	shown := f.match(tracks)
@@ -298,12 +299,19 @@ type plFilter struct {
 	sort  int    // sortDefault and on
 	luck  uint64 // the seed of the lucky order, new each time it is chosen
 	order plOrder
+	// liked are the listener's liked songs, as the page last had them,
+	// which sortNotLiked leaves out.
+	liked   map[int64]bool
+	unliked notLiked
 }
 
 // tracks returns the playlist's songs in the order chosen.
 func (f *plFilter) tracks(pl *netease.Playlist) []netease.Track {
 	if f.id != pl.ID {
 		return pl.Tracks
+	}
+	if f.sort == sortNotLiked {
+		return f.unliked.tracks(pl.Tracks, f.liked)
 	}
 	return f.order.tracks(pl.Tracks, f.sort, f.luck)
 }
@@ -424,7 +432,7 @@ func (a *app) playlistHeader(c *ui.Context, pl *netease.Playlist) {
 					a.pl.PlayQueue(tracks, firstPlayable(tracks))
 				}
 				if pillButton(c.Key("shuffle"), iconShuffle, "随机播放", p.hover.Over(p.bg), p.text).Clicked() {
-					a.pl.PlayShuffled(pl.Tracks)
+					a.pl.PlayShuffled(a.plFilter.tracks(pl))
 				}
 				if a.savable(pl) {
 					icon, label := iconPlus, "收藏"

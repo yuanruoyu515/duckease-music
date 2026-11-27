@@ -20,12 +20,15 @@ const (
 	sortAlbum
 	sortShortest
 	sortLongest
+	// sortNotLiked lists, in the playlist's order, only the songs not in
+	// the listener's liked songs: a filter more than an order.
+	sortNotLiked
 	sortLucky // shuffled anew each time it is chosen
 )
 
 // plSorts name the orders, as the sort button's menu lists them; the
 // lucky one has a button of its own.
-var plSorts = []string{"默认排序", "倒序", "按歌名", "按歌手", "按专辑", "时长从短到长", "时长从长到短", "手气顺序"}
+var plSorts = []string{"默认排序", "倒序", "按歌名", "按歌手", "按专辑", "时长从短到长", "时长从长到短", "只看不在红心歌单的", "手气顺序"}
 
 // collator orders names as the listener reads them: Chinese by pinyin,
 // among Latin letters, any case. Only the UI thread uses it.
@@ -43,7 +46,7 @@ type plOrder struct {
 
 // tracks returns tracks in the order chosen: tracks itself by default.
 func (o *plOrder) tracks(tracks []netease.Track, by int, luck uint64) []netease.Track {
-	if by == sortDefault || len(tracks) < 2 {
+	if by == sortDefault || by == sortNotLiked || len(tracks) < 2 {
 		return tracks
 	}
 	if o.sorted != nil && o.by == by && o.luck == luck && o.of == &tracks[0] && o.n == len(tracks) {
@@ -87,4 +90,30 @@ func sortBy(tracks []netease.Track, key func(*netease.Track) string) {
 	slices.SortStableFunc(tracks, func(a, b netease.Track) int {
 		return slices.Compare(keys[a.ID], keys[b.ID])
 	})
+}
+
+// notLiked keeps the songs of tracks the listener hasn't liked, worked out
+// once for each list of songs and each count of liked songs.
+type notLiked struct {
+	of     *netease.Track
+	n      int
+	likedN int
+	kept   []netease.Track
+}
+
+func (k *notLiked) tracks(tracks []netease.Track, liked map[int64]bool) []netease.Track {
+	if len(tracks) == 0 || liked == nil {
+		return tracks
+	}
+	if k.kept != nil && k.of == &tracks[0] && k.n == len(tracks) && k.likedN == len(liked) {
+		return k.kept
+	}
+	kept := make([]netease.Track, 0, len(tracks))
+	for _, t := range tracks {
+		if !liked[t.ID] {
+			kept = append(kept, t)
+		}
+	}
+	*k = notLiked{of: &tracks[0], n: len(tracks), likedN: len(liked), kept: kept}
+	return kept
 }

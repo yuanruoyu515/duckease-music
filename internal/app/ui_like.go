@@ -64,6 +64,9 @@ func (a *app) toggleLike(tr *netease.Track) {
 				return
 			}
 			a.likedChanged(song, like)
+			if like {
+				a.heartAlso(song)
+			}
 		})
 	}()
 }

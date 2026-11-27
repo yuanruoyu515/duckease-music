@@ -70,3 +70,25 @@ func TestPlaylistLucky(t *testing.T) {
 		t.Fatalf("queue %v: want the lucky order, from its first", trackNames(q))
 	}
 }
+
+// Showing only the songs not liked leaves out the liked ones, in the
+// playlist's order, and a heart takes a song out of the list.
+func TestSortNotLiked(t *testing.T) {
+	a := newTestApp()
+	a.settings = defaultSettings()
+	a.playlists[10] = &netease.Playlist{ID: 10, Name: "p", Tracks: []netease.Track{{ID: 1, Name: "a"}, {ID: 2, Name: "b"}, {ID: 3, Name: "c"}}}
+	a.liked = map[int64]bool{2: true}
+	a.route = route{page: pagePlaylist, id: 10}
+	tt := ui.NewTester(a.view, 1200, 800)
+	tt.Frame()
+	a.plFilter.sort = sortNotLiked
+	tt.Frame()
+	if got := trackNames(a.plFilter.tracks(a.playlists[10])); !slices.Equal(got, []string{"a", "c"}) {
+		t.Errorf("shows %v", got)
+	}
+	a.liked[3] = true
+	tt.Frame()
+	if got := trackNames(a.plFilter.tracks(a.playlists[10])); !slices.Equal(got, []string{"a"}) {
+		t.Errorf("after a heart shows %v", got)
+	}
+}
