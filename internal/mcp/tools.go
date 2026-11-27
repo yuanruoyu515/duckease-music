@@ -29,8 +29,25 @@ var (
 )
 
 // pause is the wait between requests of a batch, as the app's bulk edits
-// wait, so that NetEase's risk control doesn't see a burst.
+// wait, so that NetEase's risk control doesn't see a burst. netease's
+// guard also spaces edits and searches, across calls and processes.
 var pause = 400 * time.Millisecond
+
+// Most songs one call may take: an agent splits more into several calls,
+// which netease's guard spaces out.
+const (
+	maxMatch = 100
+	maxAdd   = 1000
+	maxEdit  = 200 // removals and likes, one request each or in one go
+)
+
+// tooMany says a call asked for more than it may.
+func tooMany(n, most int, what string) error {
+	if n > most {
+		return fmt.Errorf("%d %s; send at most %d per call and do the rest in later calls", n, what, most)
+	}
+	return nil
+}
 
 // chunk is how many songs go to NetEase in one request.
 const chunk = 200
@@ -426,23 +443,19 @@ func matchSongs(args json.RawMessage) (string, error) {
 	if err := json.Unmarshal(args, &a); err != nil {
 		return "", err
 	}
-	if len(a.Songs) > 200 {
-		return "", fmt.Errorf("%d songs; send at most 200 at a time", len(a.Songs))
+	if err := tooMany(len(a.Songs), maxMatch, "songs"); err != nil {
+		return "", err
 	}
 	var b strings.Builder
 	b.WriteString("n\tid\tscore\ttitle\tartists\n")
 	found := 0
 	for i, line := range a.Songs {
-		if i > 0 {
-			time.Sleep(pause / 2)
-		}
 		t, score, err := crossplay.FindNetease(match.Parse(line))
 		switch {
 		case err != nil:
 			fmt.Fprintf(&b, "%d\t-\t\terror: %s\n", i+1, clean(err.Error()))
-			var refused *netease.RefusedError
-			if errors.As(err, &refused) && refused.Blocked() {
-				fmt.Fprintf(&b, "stopped: NetEase is refusing requests (-460); try the rest later\n")
+			if blocked, _ := netease.Blocked(err); blocked {
+				fmt.Fprintf(&b, "stopped at line %d: %s\n", i+1, coolingNote(err))
 				return b.String(), nil
 			}
 		case t == nil:
@@ -549,6 +562,9 @@ func create(args json.RawMessage) (string, error) {
 	if strings.TrimSpace(a.Name) == "" {
 		return "", errors.New("empty name")
 	}
+	if err := tooMany(len(a.Songs), maxAdd, "songs"); err != nil {
+		return "", err
+	}
 	pl, err := createPlaylist(strings.TrimSpace(a.Name))
 	if err != nil {
 		return "", err
@@ -589,6 +605,13 @@ func edit(args json.RawMessage, add bool) (string, error) {
 	songs := ids(a.Songs)
 	if len(songs) == 0 {
 		return "", errors.New("no song_ids")
+	}
+	most := maxEdit
+	if add {
+		most = maxAdd
+	}
+	if err := tooMany(len(songs), most, "songs"); err != nil {
+		return "", err
 	}
 	if add {
 		asked := len(songs)
@@ -670,6 +693,9 @@ func like(args json.RawMessage) (string, error) {
 		return "", err
 	}
 	on := a.Like == nil || *a.Like
+	if err := tooMany(len(a.Songs), maxEdit, "songs"); err != nil {
+		return "", err
+	}
 	done := 0
 	for i, s := range a.Songs {
 		if i > 0 {

@@ -16,6 +16,10 @@ func SubscribePodcast(id int64, subscribe bool) error {
 // Through the web API: as the desktop client, through eapi, following is
 // refused with -460, 检测到您的网络环境存在风险, though unfollowing is not.
 func FollowArtist(id int64, follow bool) error {
+	return guarded(guardEdit, func() error { return FollowArtistNow(id, follow) })
+}
+
+func FollowArtistNow(id int64, follow bool) error {
 	path := "/api/artist/unsub"
 	if follow {
 		path = "/api/artist/sub"
@@ -25,6 +29,10 @@ func FollowArtist(id int64, follow bool) error {
 }
 
 func subscription(kind string, sub bool, data map[string]any) error {
+	return guarded(guardEdit, func() error { return subscriptionNow(kind, sub, data) })
+}
+
+func subscriptionNow(kind string, sub bool, data map[string]any) error {
 	path := "/api/" + kind + "/unsub"
 	if sub {
 		path = "/api/" + kind + "/sub"
@@ -90,6 +98,10 @@ func subQuery(offset int) url.Values {
 
 // SubscribePlaylist saves a playlist for the listener, or unsaves it.
 func SubscribePlaylist(id int64, subscribe bool) error {
+	return guarded(guardEdit, func() error { return SubscribePlaylistNow(id, subscribe) })
+}
+
+func SubscribePlaylistNow(id int64, subscribe bool) error {
 	path := "/api/playlist/unsubscribe"
 	if subscribe {
 		path = "/api/playlist/subscribe"

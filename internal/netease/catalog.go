@@ -35,7 +35,15 @@ func (r *SearchResult) Len() int {
 }
 
 // SearchPage returns limit of what matches a query, of a type, from offset.
-func SearchPage(query string, kind SearchType, limit, offset int) (SearchResult, error) {
+func SearchPage(query string, kind SearchType, limit, offset int) (r SearchResult, err error) {
+	err = guarded(guardSearch, func() error {
+		r, err = searchPageNow(query, kind, limit, offset)
+		return err
+	})
+	return r, err
+}
+
+func searchPageNow(query string, kind SearchType, limit, offset int) (SearchResult, error) {
 	var res struct {
 		Result struct {
 			Songs         []Track         `json:"songs"`

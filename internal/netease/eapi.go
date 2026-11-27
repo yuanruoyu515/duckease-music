@@ -80,6 +80,7 @@ func device() string {
 // data, and decodes the JSON it answers into out. The cookies it sets, the
 // session's among them, go in the jar.
 func eapiPost(path string, data map[string]any, out any) error {
+	paceRead()
 	header := map[string]string{
 		"osver":       eapiClient["osver"],
 		"deviceId":    device(),

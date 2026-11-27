@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"time"
 
 	"github.com/egoist/mygo"
 
@@ -17,6 +18,9 @@ func main() {
 	if len(os.Args) > 1 && os.Args[1] == "mcp" {
 		log.SetOutput(os.Stderr)
 		netease.RestoreSession()
+		// An agent may read playlist after playlist: space them, as the
+		// app's pages never ask so fast.
+		netease.ReadGap = 250 * time.Millisecond
 		if err := mcp.Serve(os.Stdin, os.Stdout, mygo.App.Version()); err != nil {
 			log.Fatal(err)
 		}

@@ -16,7 +16,15 @@ var ErrInPlaylist = errors.New("the song is in the playlist already")
 
 // CreatePlaylist makes a playlist named name for the listener, and returns
 // it, empty.
-func CreatePlaylist(name string) (*Playlist, error) {
+func CreatePlaylist(name string) (pl *Playlist, err error) {
+	err = guarded(guardEdit, func() error {
+		pl, err = createPlaylistNow(name)
+		return err
+	})
+	return pl, err
+}
+
+func createPlaylistNow(name string) (*Playlist, error) {
 	var res struct {
 		Code     int      `json:"code"`
 		Message  string   `json:"message"`
@@ -42,6 +50,10 @@ func CreatePlaylist(name string) (*Playlist, error) {
 
 // RenamePlaylist names the listener's playlist id name.
 func RenamePlaylist(id int64, name string) error {
+	return guarded(guardEdit, func() error { return RenamePlaylistNow(id, name) })
+}
+
+func RenamePlaylistNow(id int64, name string) error {
 	var res struct {
 		Code    int    `json:"code"`
 		Message string `json:"message"`
@@ -63,6 +75,10 @@ func AddToPlaylist(pid int64, songs ...int64) error { return manipulate("add", p
 func RemoveFromPlaylist(pid int64, songs ...int64) error { return manipulate("del", pid, songs) }
 
 func manipulate(op string, pid int64, songs []int64) error {
+	return guarded(guardEdit, func() error { return manipulateNow(op, pid, songs) })
+}
+
+func manipulateNow(op string, pid int64, songs []int64) error {
 	var res struct {
 		Code    int    `json:"code"`
 		Message string `json:"message"`
@@ -93,6 +109,10 @@ func manipulate(op string, pid int64, songs []int64) error {
 
 // DeletePlaylist deletes the listener's playlist id, for good.
 func DeletePlaylist(id int64) error {
+	return guarded(guardEdit, func() error { return DeletePlaylistNow(id) })
+}
+
+func DeletePlaylistNow(id int64) error {
 	var res struct {
 		Code    int    `json:"code"`
 		Message string `json:"message"`

@@ -5,7 +5,6 @@ package crossplay
 
 import (
 	"encoding/json"
-	"errors"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -279,8 +278,8 @@ func FindSpotify(want match.Song) (*spotify.Track, float64, error) {
 // Blocked reports whether err is NetEase's risk control turning requests
 // away, after which searching on only lengthens it.
 func Blocked(err error) bool {
-	var r *netease.RefusedError
-	return errors.As(err, &r) && r.Blocked()
+	b, _ := netease.Blocked(err)
+	return b
 }
 
 // NeteaseIDs finds each Spotify track on NetEase: the ids, 0 for those

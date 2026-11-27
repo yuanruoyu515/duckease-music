@@ -14,6 +14,9 @@ import (
 	"io"
 	"log"
 	"sync"
+	"time"
+
+	"netease-music-mygo/internal/netease"
 )
 
 const protocolVersion = "2025-06-18"
@@ -141,13 +144,27 @@ func call(t tool, args json.RawMessage) map[string]any {
 		return t.run(args)
 	}()
 	if err != nil {
-		return map[string]any{"content": []map[string]any{{"type": "text", "text": "error: " + err.Error()}}, "isError": true}
+		msg := "error: " + err.Error()
+		if blocked, _ := netease.Blocked(err); blocked {
+			msg = "error: " + coolingNote(err)
+		}
+		return map[string]any{"content": []map[string]any{{"type": "text", "text": msg}}, "isError": true}
 	}
 	return map[string]any{"content": []map[string]any{{"type": "text", "text": text}}}
+}
+
+// coolingNote tells an agent NetEase's risk control refused, and how long
+// to leave it be: retrying sooner only lengthens it.
+func coolingNote(err error) string {
+	_, wait := netease.Blocked(err)
+	if wait <= 0 {
+		wait = time.Minute
+	}
+	return fmt.Sprintf("NetEase risk control (-460) is refusing requests. Make no NetEase calls for %s, then try again; don't retry sooner, it lengthens the block. Work already done stays done.", wait.Round(time.Second))
 }
 
 const instructions = `Manage the user's NetEase Cloud Music (网易云音乐) playlists in DuckEase Music.
 Replies are tab-separated lines with a header; song lines are: id, title, artists, album, length; "!" before an id marks a song the user can't stream.
 Work by id: list playlists, read one (use query to filter instead of reading long lists), find songs with search or match (match takes many "title - artist" lines at once), then add, remove or move by id.
 Spotify tools (spotify_*, sync_*) work once Spotify is connected in the app's settings; Spotify lets them read the songs only of playlists the user made or collaborates on. Syncing only adds songs.
-Write tools change the user's real account. NetEase rate-limits bursts (error -460): the server already spaces its requests; don't call write tools in parallel.`
+Write tools change the user's real account. NetEase's risk control (-460) watches bursts: the server spaces every request and stops all of them for a while after a -460, saying how long; wait that long. Prefer one call with many ids over many calls with one, and don't call tools in parallel.`

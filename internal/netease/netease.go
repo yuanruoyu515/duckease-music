@@ -188,6 +188,7 @@ func post(path string, form url.Values, out any) error {
 }
 
 func do(req *http.Request, out any) error {
+	paceRead()
 	req.Header.Set("User-Agent", UserAgent)
 	req.Header.Set("Referer", apiBase+"/")
 	res, err := httpClient.Do(req)
@@ -462,6 +463,10 @@ func SongURL(id int64, level string) (*Stream, error) {
 	// Another code is NetEase turning the request away, as it does now and
 	// then, not the song: worth asking again, where an empty URL is not.
 	if res.Code != 200 {
+		if res.Code == -460 {
+			// The account is flagged: hold back edits and searches too.
+			trip()
+		}
 		return nil, &RefusedError{Code: res.Code, Message: cmp.Or(res.Message, res.Msg)}
 	}
 	if len(res.Data) == 0 || res.Data[0].URL == "" {

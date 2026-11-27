@@ -274,6 +274,10 @@ func RecentPlays(limit int) ([]Play, error) {
 
 // Like likes a song, adding it to the listener's liked songs, or unlikes it.
 func Like(id int64, like bool) error {
+	return guarded(guardEdit, func() error { return LikeNow(id, like) })
+}
+
+func LikeNow(id int64, like bool) error {
 	var res struct {
 		Code int    `json:"code"`
 		Msg  string `json:"msg"`
