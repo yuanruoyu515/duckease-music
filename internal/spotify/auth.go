@@ -171,6 +171,8 @@ type Login struct {
 	verifier string
 	state    string
 	ln       net.Listener
+	cancel   chan struct{}
+	once     sync.Once
 }
 
 // StartLogin starts connecting with the client id of the listener's app,
@@ -185,7 +187,7 @@ func StartLogin(clientID string) (*Login, error) {
 	if err != nil {
 		return nil, fmt.Errorf("spotify: listen on %s: %w", u.Host, err)
 	}
-	l := &Login{clientID: clientID, verifier: random(48), state: random(16), ln: ln}
+	l := &Login{clientID: clientID, verifier: random(48), state: random(16), ln: ln, cancel: make(chan struct{})}
 	sum := sha256.Sum256([]byte(l.verifier))
 	q := url.Values{
 		"client_id":             {clientID},
@@ -243,6 +245,8 @@ func (l *Login) Wait(ctx context.Context) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
+	case <-l.cancel:
+		return errors.New("spotify: login canceled")
 	case r = <-got:
 	}
 	if r.err != nil {
@@ -271,7 +275,7 @@ func (l *Login) Wait(ctx context.Context) error {
 }
 
 // Cancel gives up a login before Spotify sends the listener back.
-func (l *Login) Cancel() { l.ln.Close() }
+func (l *Login) Cancel() { l.once.Do(func() { close(l.cancel) }) }
 
 // token asks Spotify for tokens with form, and puts them in s.
 func (s *session) token(form url.Values) error {
