@@ -235,13 +235,27 @@ func Playlists() ([]Playlist, error) {
 }
 
 // ErrNotReadable is what reading the songs of a playlist the listener
-// neither made nor collaborates on gives: Spotify keeps them from
-// Development Mode apps.
+// neither made nor collaborates on gives, when its public page doesn't
+// show them either: Spotify keeps them from Development Mode apps.
 var ErrNotReadable = errors.New("spotify: only the songs of playlists you made or collaborate on can be read")
 
+// LikedID stands for the listener's Liked Songs where a playlist id goes:
+// PlaylistItems reads them, AddItems likes songs and RemoveItems unlikes
+// them.
+const LikedID = "liked"
+
+// IsLiked reports whether id is the listener's Liked Songs.
+func IsLiked(id string) bool { return id == LikedID }
+
 // PlaylistItems returns the songs of playlist id, in order, without local
-// files and podcast episodes, at most 5000.
+// files and podcast episodes, at most 5000; or the listener's Liked Songs,
+// newest first, for LikedID. A playlist whose songs the Web API keeps
+// from the app, someone else's, is read off its public page, which shows
+// its first EmbedLimit.
 func PlaylistItems(id string) ([]Track, error) {
+	if IsLiked(id) {
+		return SavedTracks()
+	}
 	var all []Track
 	next := "/playlists/" + url.PathEscape(id) + "/items?limit=50&additional_types=track"
 	for next != "" && len(all) < 5000 {
@@ -255,7 +269,7 @@ func PlaylistItems(id string) ([]Track, error) {
 		if err := call("GET", next, nil, nil, &page); err != nil {
 			var e *APIError
 			if errors.As(err, &e) && (e.Status == 403 || e.Status == 404) && len(all) == 0 {
-				return nil, ErrNotReadable
+				return embedItems(id)
 			}
 			return all, err
 		}
@@ -272,6 +286,46 @@ func PlaylistItems(id string) ([]Track, error) {
 		next = page.Next
 	}
 	return all, nil
+}
+
+// SavedTracks returns the listener's Liked Songs, newest first, at most
+// 10000.
+func SavedTracks() ([]Track, error) {
+	var all []Track
+	next := "/me/tracks?limit=50"
+	for next != "" && len(all) < 10000 {
+		var page struct {
+			Items []struct {
+				Track *Track `json:"track"`
+				Item  *Track `json:"item"`
+			} `json:"items"`
+			Next string `json:"next"`
+		}
+		if err := call("GET", next, nil, nil, &page); err != nil {
+			return all, err
+		}
+		for _, it := range page.Items {
+			t := it.Track
+			if t == nil {
+				t = it.Item
+			}
+			if t == nil || t.IsLocal || t.ID == "" {
+				continue
+			}
+			all = append(all, *t)
+		}
+		next = page.Next
+	}
+	return all, nil
+}
+
+// LikedCount returns how many songs the listener liked.
+func LikedCount() (int, error) {
+	var page struct {
+		Total int `json:"total"`
+	}
+	err := call("GET", "/me/tracks?limit=1", nil, nil, &page)
+	return page.Total, err
 }
 
 // Search returns up to limit tracks matching query, at most 10, as many as
@@ -294,8 +348,12 @@ func CreatePlaylist(name, description string) (*Playlist, error) {
 	return &p, call("POST", "/me/playlists", nil, body, &p)
 }
 
-// AddItems adds tracks, by URI, to the end of playlist id, 100 at a time.
+// AddItems adds tracks, by URI, to the end of playlist id, 100 at a time;
+// to Liked Songs, for LikedID, where they go first.
 func AddItems(id string, uris []string) error {
+	if IsLiked(id) {
+		return library("PUT", uris)
+	}
 	for len(uris) > 0 {
 		n := min(len(uris), 100)
 		if err := call("POST", "/playlists/"+url.PathEscape(id)+"/items", nil, map[string]any{"uris": uris[:n]}, nil); err != nil {
@@ -306,8 +364,12 @@ func AddItems(id string, uris []string) error {
 	return nil
 }
 
-// RemoveItems takes tracks, by URI, out of playlist id, 100 at a time.
+// RemoveItems takes tracks, by URI, out of playlist id, 100 at a time,
+// every time each is in it; out of Liked Songs, for LikedID.
 func RemoveItems(id string, uris []string) error {
+	if IsLiked(id) {
+		return library("DELETE", uris)
+	}
 	for len(uris) > 0 {
 		n := min(len(uris), 100)
 		items := make([]map[string]string, n)
@@ -320,4 +382,68 @@ func RemoveItems(id string, uris []string) error {
 		uris = uris[n:]
 	}
 	return nil
+}
+
+// libraryChunk is how many URIs one call of /me/library takes.
+const libraryChunk = 40
+
+// library puts URIs in the listener's library, or takes them out, with
+// method PUT or DELETE: tracks are their Liked Songs, a playlist one they
+// keep. An app made before February 2026 may still be on the calls of
+// each kind, which it falls back on when /me/library isn't there for it.
+func library(method string, uris []string) error {
+	for len(uris) > 0 {
+		n := min(len(uris), libraryChunk)
+		chunk := uris[:n]
+		err := call(method, "/me/library", url.Values{"uris": {strings.Join(chunk, ",")}}, nil, nil)
+		var e *APIError
+		if errors.As(err, &e) && (e.Status == 404 || e.Status == 405) {
+			err = oldLibrary(method, chunk)
+		}
+		if err != nil {
+			return err
+		}
+		uris = uris[n:]
+	}
+	return nil
+}
+
+// oldLibrary is library by the calls before February 2026.
+func oldLibrary(method string, uris []string) error {
+	var tracks []string
+	for _, u := range uris {
+		kind, id := splitURI(u)
+		switch kind {
+		case "track":
+			tracks = append(tracks, id)
+		case "playlist":
+			if err := call(method, "/playlists/"+url.PathEscape(id)+"/followers", nil, nil, nil); err != nil {
+				return err
+			}
+		}
+	}
+	if len(tracks) == 0 {
+		return nil
+	}
+	return call(method, "/me/tracks", url.Values{"ids": {strings.Join(tracks, ",")}}, nil, nil)
+}
+
+// splitURI splits spotify:track:abc into track and abc.
+func splitURI(u string) (kind, id string) {
+	parts := strings.Split(u, ":")
+	if len(parts) != 3 {
+		return "", ""
+	}
+	return parts[1], parts[2]
+}
+
+// ChangeDetails renames playlist id and sets its description.
+func ChangeDetails(id, name, description string) error {
+	return call("PUT", "/playlists/"+url.PathEscape(id), nil, map[string]any{"name": name, "description": description}, nil)
+}
+
+// RemovePlaylist takes playlist id out of the listener's library: for
+// their own, what Spotify calls deleting it.
+func RemovePlaylist(id string) error {
+	return library("DELETE", []string{"spotify:playlist:" + id})
 }

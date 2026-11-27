@@ -413,6 +413,25 @@ func NeteaseIDs(tracks []spotify.Track, b Budget) ([]int64, error) {
 	return ids, err
 }
 
+// KnownNeteaseIDs returns the NetEase ids of the Spotify tracks found
+// before, 0 for the others, without searching: unknown counts those not
+// looked for yet, or due to be looked for again.
+func KnownNeteaseIDs(tracks []spotify.Track) (ids []int64, unknown int) {
+	mu.Lock()
+	defer mu.Unlock()
+	s := load()
+	ids = make([]int64, len(tracks))
+	for i := range tracks {
+		f, ok := known(s.ToNetease, tracks[i].ID)
+		if !ok {
+			unknown++
+			continue
+		}
+		ids[i] = atoi(f.ID)
+	}
+	return ids, unknown
+}
+
 // SpotifyURIs finds each NetEase track on Spotify: the URIs, "" for those
 // not found, as NeteaseIDs does the other way.
 func SpotifyURIs(tracks []netease.Track, b Budget) ([]string, error) {

@@ -34,8 +34,13 @@ import (
 const RedirectURI = "http://127.0.0.1:43821/callback"
 
 // Scopes are what the app asks to do: read the listener's playlists, also
-// private and collaborative ones, and edit them.
-const Scopes = "playlist-read-private playlist-read-collaborative playlist-modify-private playlist-modify-public user-read-private"
+// private and collaborative ones, and edit them, and read and change their
+// Liked Songs and the playlists in their library.
+const Scopes = "playlist-read-private playlist-read-collaborative playlist-modify-private playlist-modify-public user-read-private user-library-read user-library-modify"
+
+// libraryScope is the scope a connection made before Liked Songs came
+// lacks: such a one is connected again to read them.
+const libraryScope = "user-library-read"
 
 const (
 	authURL  = "https://accounts.spotify.com/authorize"
@@ -55,6 +60,9 @@ type session struct {
 	Expiry   time.Time `json:"expiry"`
 	User     string    `json:"user"` // the listener's Spotify id
 	Name     string    `json:"name"` // and display name
+	// Scope is what the listener allowed, as Spotify said; "" for a
+	// connection kept before the app noted it.
+	Scope string `json:"scope,omitempty"`
 }
 
 var (
@@ -146,6 +154,16 @@ func Account() (id, name string) {
 		return "", ""
 	}
 	return s.User, s.Name
+}
+
+// NeedsReconnect reports whether the connection was allowed fewer scopes
+// than the app asks now, as one made before Liked Songs came: Spotify
+// asks the listener again when they connect again.
+func NeedsReconnect() bool {
+	mu.Lock()
+	defer mu.Unlock()
+	s := load()
+	return s.Refresh != "" && !strings.Contains(" "+s.Scope+" ", " "+libraryScope+" ")
 }
 
 // ClientID returns the client id last connected with.
@@ -304,6 +322,7 @@ func (s *session) token(form url.Values) error {
 		Access    string `json:"access_token"`
 		Refresh   string `json:"refresh_token"`
 		ExpiresIn int    `json:"expires_in"`
+		Scope     string `json:"scope"`
 		Error     string `json:"error"`
 		Desc      string `json:"error_description"`
 	}
@@ -316,6 +335,9 @@ func (s *session) token(form url.Values) error {
 	s.Access = t.Access
 	if t.Refresh != "" { // a refresh may or may not bring a new one
 		s.Refresh = t.Refresh
+	}
+	if t.Scope != "" {
+		s.Scope = t.Scope
 	}
 	s.Expiry = time.Now().Add(time.Duration(t.ExpiresIn)*time.Second - time.Minute)
 	return nil

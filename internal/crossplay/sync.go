@@ -241,6 +241,31 @@ func ImportToNetease(sp, name string, b Budget, progress Progress) (Link, Report
 	return l, r, err
 }
 
+// LinkTo pairs Spotify playlist sp with the listener's NetEase playlist
+// ne, which they had already, and syncs them the way d says.
+func LinkTo(sp string, ne int64, name string, d Direction, b Budget, progress Progress) (Link, Report, error) {
+	l := Link{Spotify: sp, Netease: ne, Name: name, Direction: d}
+	if old, ok := linkOf(sp); ok && old.Netease == ne {
+		// The same pair again: what was seen of it still holds.
+		old.Direction = d
+		l = old
+	}
+	if err := SetLink(l); err != nil {
+		return l, Report{}, err
+	}
+	r, err := Sync(l, b, progress)
+	return l, r, err
+}
+
+func linkOf(sp string) (Link, bool) {
+	for _, l := range Links() {
+		if l.Spotify == sp {
+			return l, true
+		}
+	}
+	return Link{}, false
+}
+
 // ExportToSpotify makes a Spotify playlist of the songs of NetEase
 // playlist id, named name, and pairs the two.
 func ExportToSpotify(id int64, name string, b Budget, progress Progress) (Link, Report, error) {
