@@ -2,6 +2,7 @@ package app
 
 import (
 	"math"
+	"slices"
 	"time"
 
 	"github.com/egoist/mygo/ui"
@@ -52,7 +53,7 @@ func (a *app) toggleLike(tr *netease.Track) {
 	if a.liked == nil {
 		a.liked = map[int64]bool{}
 	}
-	id, like := tr.ID, !a.liked[tr.ID]
+	id, like, song := tr.ID, !a.liked[tr.ID], *tr
 	a.setLiked(id, like)
 	go func() {
 		err := likeSong(id, like)
@@ -62,17 +63,39 @@ func (a *app) toggleLike(tr *netease.Track) {
 				a.toast = "操作失败，请稍后再试"
 				return
 			}
-			// The liked songs' playlist changed: load it anew when shown.
-			for _, pl := range a.mine {
-				if pl.SpecialType == 5 {
-					delete(a.playlists, pl.ID)
-					if a.route.page == pagePlaylist && a.route.id == pl.ID {
-						a.loadPlaylist(pl.ID, false)
-					}
-				}
-			}
+			a.likedChanged(song, like)
 		})
 	}()
+}
+
+// likedChanged puts song in the liked songs' playlist, at its top as
+// NetEase does, or takes it out, where it was loaded: reloading it showed
+// its skeleton over the page at each heart, for seconds with a long one.
+func (a *app) likedChanged(song netease.Track, like bool) {
+	for _, mine := range a.mine {
+		if mine.SpecialType != 5 {
+			continue
+		}
+		pl := a.playlists[mine.ID]
+		if pl == nil {
+			return // loaded when opened
+		}
+		next := *pl
+		next.Tracks = slices.DeleteFunc(slices.Clone(pl.Tracks), func(t netease.Track) bool { return t.ID == song.ID })
+		next.TrackIDs = slices.DeleteFunc(slices.Clone(pl.TrackIDs), func(t struct {
+			ID int64 `json:"id"`
+		}) bool {
+			return t.ID == song.ID
+		})
+		if like {
+			next.Tracks = slices.Insert(next.Tracks, 0, song)
+			next.TrackIDs = slices.Insert(next.TrackIDs, 0, struct {
+				ID int64 `json:"id"`
+			}{song.ID})
+		}
+		next.TrackCount = len(next.TrackIDs)
+		a.playlists[mine.ID] = &next
+	}
 }
 
 func (a *app) toggleProgramLike(id int64) {

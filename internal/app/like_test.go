@@ -488,3 +488,27 @@ func TestLikeCurrent(t *testing.T) {
 		t.Fatalf("episode liked %v, its audio %v", a.likedPrograms[3], a.liked[13])
 	}
 }
+
+// A heart changes the liked songs' playlist where it is loaded, the song
+// put on top or taken out, instead of dropping it to load again, which
+// showed the playlist's skeleton over the page at every heart.
+func TestLikeKeepsLikedPlaylistLoaded(t *testing.T) {
+	a := newTestApp()
+	a.mine = []netease.Playlist{{ID: 9, SpecialType: 5}}
+	pl := &netease.Playlist{ID: 9, Tracks: []netease.Track{{ID: 1}, {ID: 2}}, TrackCount: 2}
+	pl.TrackIDs = append(pl.TrackIDs, struct {
+		ID int64 `json:"id"`
+	}{1}, struct {
+		ID int64 `json:"id"`
+	}{2})
+	a.playlists[9] = pl
+	a.likedChanged(netease.Track{ID: 3}, true)
+	a.likedChanged(netease.Track{ID: 1}, false)
+	got := a.playlists[9]
+	if got == nil || len(got.Tracks) != 2 || got.Tracks[0].ID != 3 || got.Tracks[1].ID != 2 || got.TrackCount != 2 {
+		t.Fatalf("liked playlist %+v", got)
+	}
+	if len(pl.Tracks) != 2 || pl.Tracks[0].ID != 1 {
+		t.Error("the playlist shown was changed in place")
+	}
+}
