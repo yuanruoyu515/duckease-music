@@ -257,6 +257,8 @@ func (a *app) settingsView(c *ui.Context) {
 			})
 		})
 
+		a.spotSettings(c, group, row)
+
 		group("账号", func() {
 			if a.profile == nil {
 				row("未登录", "登录后，每日推荐与歌单将根据你的口味生成", func() {

@@ -523,6 +523,10 @@ func Sized(pic string, n int) string {
 		// A cover of the listener's own, on disk, is the size it is.
 		return pic
 	}
+	if strings.Contains(pic, "scdn.co/") || strings.Contains(pic, "spotifycdn.com/") {
+		// Spotify's, as its playlists' covers, sized by Spotify.
+		return pic
+	}
 	pic = strings.Replace(pic, "http://", "https://", 1)
 	return fmt.Sprintf("%s?param=%dy%d", pic, n, n)
 }

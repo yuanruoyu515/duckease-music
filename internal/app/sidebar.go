@@ -33,6 +33,7 @@ var sideSections = []sideSection{
 	{"search", "搜索结果", iconSearch, pageSearch},
 	{"mine", "我的歌单", iconNote, pagePlaylist},
 	{"saved", "收藏的歌单", iconHeart, pagePlaylist},
+	{"spotify", "Spotify 歌单", iconNote, pageSpotify},
 }
 
 func sideSectionOf(id string) (sideSection, bool) {
@@ -75,7 +76,7 @@ func (a *app) sideShown(id string) bool {
 // shows, or the home page with none shown.
 func (a *app) firstPage() route {
 	for _, it := range sidebarOrder(a.settings.Sidebar) {
-		if s, _ := sideSectionOf(it.ID); !it.Hidden && s.page != pagePlaylist && s.page != pageSearch {
+		if s, _ := sideSectionOf(it.ID); !it.Hidden && s.page != pagePlaylist && s.page != pageSearch && s.page != pageSpotify {
 			return route{page: s.page}
 		}
 	}
@@ -136,6 +137,8 @@ func (a *app) sidebarSections(c *ui.Context) {
 			a.myPlaylists(c, s.label, a.mine, true, &a.mineCollapsed)
 		case "saved":
 			a.myPlaylists(c, s.label, a.saved, false, &a.savedCollapsed)
+		case "spotify":
+			a.spotPlaylists(c, s.label)
 		default:
 			a.navItem(c, s.icon, s.label, route{page: s.page})
 		}

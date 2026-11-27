@@ -488,6 +488,9 @@ func (a *app) playlistMenu(pl *netease.Playlist) func(m *ui.Menu) {
 		if m.Item("批量选择歌曲").Chosen() {
 			a.startPicking(pl.ID)
 		}
+		if a.isMine(pl.ID) {
+			a.spotifyMenuItems(m, pl)
+		}
 		if m.Item("管理我的歌单…").Chosen() {
 			a.openManager(!a.isMine(pl.ID) && a.isSaved(pl))
 		}

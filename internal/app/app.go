@@ -25,6 +25,7 @@ const (
 	pageUser
 	pagePodcast
 	pagePodcasts
+	pageSpotify // a Spotify playlist of the listener's, by route.query
 )
 
 type route struct {
@@ -34,6 +35,7 @@ type route struct {
 	// query and kind are what a search page searched for.
 	query string
 	kind  netease.SearchType
+	// The Spotify playlist a Spotify page shows is in query.
 }
 
 // app is the state both windows show. Everything in it is read and changed
@@ -44,6 +46,8 @@ type app struct {
 	art  *artCache
 	pl   *player.Player
 	pal  palette
+
+	spot spotState // Spotify (spotify.go)
 
 	route   route
 	history []route
@@ -253,6 +257,7 @@ func Run() error {
 		})
 		a.setMenu()
 		a.boot()
+		a.bootSpotify()
 		// From the menu bar alone, the Dock icon shows while the window
 		// does.
 		a.syncDock()

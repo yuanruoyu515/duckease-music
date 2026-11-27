@@ -35,6 +35,12 @@ claude mcp add duckease -- "/Applications/DuckEase Music.app/Contents/MacOS/Duck
 | `add_songs` / `remove_songs` | 往自己的歌单里加歌、删歌，已经有的歌自动跳过 |
 | `rename_playlist` / `delete_playlist` | 改名、删除自己的歌单。「我喜欢的音乐」不能改也不能删 |
 | `like_songs` | 喜欢或取消喜欢 |
+| `spotify_playlists` | 列出 Spotify 歌单，带关联的网易云歌单 id |
+| `spotify_playlist` | 读一个自己的 Spotify 歌单的歌 |
+| `spotify_import` / `spotify_export` | 把 Spotify 歌单复制到网易云，或反过来，并关联两个歌单 |
+| `sync_links` / `sync_playlist` | 查看关联、同步关联的歌单（只加不删） |
+
+Spotify 的工具要先在 app 设置里连接 Spotify，见 [SPOTIFY.md](SPOTIFY.md)。
 
 ## 为什么省 token
 

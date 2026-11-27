@@ -52,6 +52,10 @@ UI 框架的规则（Context、Element 生命周期、线程）见 `.agents/skil
 
 `DuckEase Music mcp` 不开界面，在 stdio 上提供管理歌单的 MCP 工具，用 app 钥匙串里的登录态。接法、工具和风控节奏见 [docs/MCP.md](docs/MCP.md)。改 `internal/netease` 里歌单相关函数的签名时，记得 `internal/mcp/tools.go` 也在用。
 
+## Spotify
+
+设置里连接用户自己建的 Spotify 开发者 app（PKCE，回调 `http://127.0.0.1:43821/callback`）。令牌存在钥匙串 `spotify-session`，匹配结果和歌单关联存在用户数据目录的 `crossplay.json`。只能读自己创建或协作的歌单；app 所有者要有 Premium；同步只加不删。Spotify 改接口时先看 developer.spotify.com 的 Web API changelog，字段改名改 `internal/spotify/api.go`。详见 [docs/SPOTIFY.md](docs/SPOTIFY.md)。
+
 ## 本机数据与备份
 
 - 侧边栏的顺序和隐藏项在 `settings.json` 的 `sidebar`，正在播放卡片在 `hideSideNowPlaying`。新加的侧边栏区块记得加进 `internal/app/sidebar.go` 的 `sideSections`，旧设置里没有的项会自动排到最后并显示。

@@ -142,6 +142,8 @@ func (a *app) load(r route) {
 		a.loadPodcast(r.id)
 	case pagePodcasts:
 		a.loadPodcastTab()
+	case pageSpotify:
+		a.loadSpotPage(r.query, false)
 	}
 }
 
@@ -374,6 +376,8 @@ func (a *app) content(c *ui.Context) {
 		a.podcastPage(c)
 	case pagePodcasts:
 		a.podcastsPage(c)
+	case pageSpotify:
+		a.spotifyPage(c)
 	}
 }
 
