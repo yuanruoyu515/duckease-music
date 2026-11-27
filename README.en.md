@@ -40,6 +40,8 @@ Tidying playlists takes hundreds of clicks, which is a job for an agent. The Duc
 
 **Connecting**: click your avatar at the bottom left and choose 连接 AI Agent… (Connect AI Agent). Codex, Claude Code, Claude Desktop, and Cursor connect or disconnect in one click, or you can copy the configuration and add it yourself. For any other AI tool, click 复制给 Agent 的话 (copy a message for the agent) and paste it in; the agent sets itself up. One-click setup only adds or replaces the entry named `duckease` and saves a `.duckease-backup` beside the file first.
 
+<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/agents-dark.png"><img alt="The Connect AI Agent dialog: one row each for Codex, Claude Code, Claude Desktop and Cursor, Claude Code marked connected, and the copy-a-message button at the bottom" src="assets/screenshots/agents-light.png"></picture></p>
+
 Then just ask, say, "remove the duplicates from these playlists" or "make a playlist from this list of songs". The tools it gets:
 
 | For | Tools |
@@ -60,6 +62,13 @@ On the first call, the Keychain may ask whether DuckEase Music can read its logi
 ## Spotify and NetEase, both ways
 
 Once Spotify is connected, the sidebar gets a Spotify 歌单 group. Open a playlist and each song is looked up on NetEase and played in DuckEase Music. **Spotify audio is not played here**: Spotify's API provides no audio, so only songs that NetEase (or the fallback source, if on) has will play. Songs without a match are listed at the bottom of the page.
+
+<table>
+  <tr>
+    <td width="50%" valign="top"><b>A Spotify playlist</b><br>Matched songs play right away; the ones NetEase lacks are listed at the bottom. Once linked to a NetEase playlist, it syncs from here.<br><br><picture><source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/spotify-dark.png"><img alt="The Spotify playlist 公路旅行: NetEase has 6 of its 8 songs, it is linked to a NetEase playlist, and the 2 songs not found are listed at the bottom" src="assets/screenshots/spotify-light.png"></picture></td>
+    <td width="50%" valign="top"><b>Matching, with a duck</b><br>The duck swims as far as the matching has got. Leave the page and it keeps going, with a percentage in the sidebar.<br><br><picture><source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/spotify-matching-dark.png"><img alt="Matching progress: the duck a third of the way along a waterline, above 正在网易云匹配歌曲 412 / 1302, with 31% beside the playlist in the sidebar" src="assets/screenshots/spotify-matching-light.png"></picture></td>
+  </tr>
+</table>
 
 **Connecting** takes a Spotify developer app of your own: create one in Spotify's Developer Dashboard with the redirect URI `http://127.0.0.1:43821/callback`, paste its Client ID under Settings → Spotify, and click 连接 (Connect). Login uses PKCE, needs no client secret, and keeps its tokens in the Keychain. Under Spotify's rules since 2026, the app's owner needs **Premium**, and only playlists **you created or collaborate on** can be read; followed and editorial playlists appear greyed out. Steps and limits are in [docs/SPOTIFY.md](docs/SPOTIFY.md) (Chinese).
 

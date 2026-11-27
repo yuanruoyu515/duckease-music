@@ -1,8 +1,8 @@
 package app
 
 import (
-	"image/png"
 	"encoding/json"
+	"image/png"
 	"os"
 	"path/filepath"
 	"strings"

@@ -40,6 +40,8 @@
 
 **接上它**：点左下角头像，选「连接 AI Agent…」。Codex、Claude Code、Claude Desktop、Cursor 都能一键接入或移除，也可以复制配置自己加。别的 AI 工具，点「复制给 Agent 的话」，粘贴给它，让它自己接。一键接入只增改名为 `duckease` 的那一项，改之前在旁边存一份 `.duckease-backup`。
 
+<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/agents-dark.png"><img alt="连接 AI Agent 窗口：Codex、Claude Code、Claude Desktop、Cursor 各一行，Claude Code 标着已接入，底部是复制给 Agent 的话" src="assets/screenshots/agents-light.png"></picture></p>
+
 接好以后可以直接跟 agent 说「把这几个歌单里重复的歌删掉」「照这份歌名清单建一个歌单」。它能用的工具：
 
 | 用途 | 工具 |
@@ -60,6 +62,13 @@
 ## Spotify 和网易云互通
 
 连上 Spotify 后，侧边栏多一组「Spotify 歌单」。点开一个，里面的歌会逐首在网易云上找到对应的那首，直接在 DuckEase Music 里放。**Spotify 的音频不在这里播放**：Spotify 的接口不提供音频，能放的只有网易云（和打开了的备用音源）里有的歌，找不到的列在歌单页最底下。
+
+<table>
+  <tr>
+    <td width="50%" valign="top"><b>Spotify 歌单页</b><br>匹配到的歌直接放，没找到的列在最底下；和网易云歌单关联后，这里能同步。<br><br><picture><source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/spotify-dark.png"><img alt="Spotify 歌单「公路旅行」，8 首里网易云有 6 首，已和网易云歌单关联，底部列出没找到的 2 首" src="assets/screenshots/spotify-light.png"></picture></td>
+    <td width="50%" valign="top"><b>边游边匹配</b><br>小鸭游到哪，就匹配到哪。离开页面也接着找，侧边栏显示百分比。<br><br><picture><source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/spotify-matching-dark.png"><img alt="匹配进度：小鸭在水线上游到三分之一处，下面写着正在网易云匹配歌曲 412 / 1302，侧边栏歌单旁显示 31%" src="assets/screenshots/spotify-matching-light.png"></picture></td>
+  </tr>
+</table>
 
 **连接**要用你自己的 Spotify 开发者 app：在 Spotify 的 Developer Dashboard 建一个，Redirect URI 填 `http://127.0.0.1:43821/callback`，把 Client ID 粘到「设置 → Spotify」，点「连接」。走 PKCE，不需要 Client Secret，令牌存在钥匙串里。按 Spotify 2026 年起的规定，app 的所有者要有 **Premium**，而且只能读到**自己创建或参与协作的歌单**；关注的别人的歌单和官方歌单会显示成灰色。步骤和限制详见 [docs/SPOTIFY.md](docs/SPOTIFY.md)。
 

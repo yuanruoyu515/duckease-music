@@ -13,8 +13,10 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
+	"netease-music-mygo/internal/crossplay"
 	"netease-music-mygo/internal/lyrics"
 	"netease-music-mygo/internal/netease"
+	"netease-music-mygo/internal/spotify"
 )
 
 // With NM_PRESS_SHOTS set, renders the real views with invented songs and
@@ -29,7 +31,7 @@ func TestPressScreenshots(t *testing.T) {
 	}
 	fallbackUsage = func(time.Time) (int, int, time.Duration) { return 12, 40, 3*time.Minute + 12*time.Second }
 	defer func() { fallbackUsage = netease.FallbackUsage }()
-	for _, scene := range []string{"home", "now-playing", "stage", "queue", "playlist", "settings", "picking", "manager", "cover-picker", "sidebar", "backup", "wall", "stage-partita", "stage-tilt", "fog", "daily"} {
+	for _, scene := range []string{"home", "now-playing", "stage", "queue", "playlist", "settings", "picking", "manager", "cover-picker", "sidebar", "backup", "wall", "stage-partita", "stage-tilt", "fog", "daily", "agents", "spotify", "spotify-matching"} {
 		for _, dark := range []bool{false, true} {
 			a := pressApp()
 			view, w, h := a.view, 1200, 800
@@ -78,6 +80,17 @@ func TestPressScreenshots(t *testing.T) {
 				a.nowPlaying, a.npPane = true, paneStage
 			case "queue":
 				a.nowPlaying, a.npPane = true, paneQueue
+			case "agents":
+				a.agents = agentsState{open: true, exe: "/Applications/DuckEase Music.app/Contents/MacOS/DuckEase Music",
+					installed: map[string]bool{"codex": true, "claude-code": true, "claude-desktop": true},
+					connected: map[string]bool{"claude-code": true}}
+			case "spotify":
+				pressSpotify(a)
+				a.route = route{page: pageSpotify, query: "sp-road"}
+			case "spotify-matching":
+				pressSpotify(a)
+				a.route = route{page: pageSpotify, query: "sp-rain"}
+				a.spot.pages["sp-rain"] = &spotPage{loading: true, done: 412, total: 1302}
 			}
 			tt := ui.NewTester(view, w, h)
 			tt.SetDark(dark)
@@ -154,6 +167,34 @@ func pressApp() *app {
 	a.pl.SetLyrics(lyrics.Build("[00:00.00]晚风经过，灯一盏盏亮了\n[00:18.00]把没做完的事留给明天\n[00:36.00]今天就走到这里吧\n[00:54.00]慢一点，也能到家\n[01:12.00]耳机里还有一小段晴天\n[01:30.00]陪我沿着海岸走远", "", ""))
 	a.pl.Hold(40 * time.Second)
 	return a
+}
+
+// pressSpotify connects the demo app to Spotify: two playlists of the
+// listener's, one linked to a NetEase copy and its songs found, and one
+// they follow, whose songs Spotify keeps from the app.
+func pressSpotify(a *app) {
+	a.spot.user, a.spot.name = "demo", "Demo"
+	// Spotify's playlists up the sidebar, where the shot shows them.
+	a.settings.Sidebar = []sideItem{{ID: "home"}, {ID: "daily"}, {ID: "spotify"}, {ID: "mine"}, {ID: "saved"},
+		{ID: "fm", Hidden: true}, {ID: "charts", Hidden: true}, {ID: "podcasts", Hidden: true}, {ID: "search"}}
+	a.spot.lists = []spotify.Playlist{
+		{ID: "sp-road", Name: "公路旅行", Owner: spotify.User{ID: "demo", DisplayName: "Demo"}, Images: []struct {
+			URL string `json:"url"`
+		}{{URL: "press://cover/5"}}},
+		{ID: "sp-rain", Name: "下雨天听的歌", Owner: spotify.User{ID: "demo", DisplayName: "Demo"}, Images: []struct {
+			URL string `json:"url"`
+		}{{URL: "press://cover/6"}}},
+		{ID: "sp-followed", Name: "别人的精选", Owner: spotify.User{ID: "someone"}},
+	}
+	songs := a.daily[:6]
+	missing := []spotify.Track{{Name: "Late Night Drive"}, {Name: "Coastline"}}
+	missing[0].Artists = append(missing[0].Artists, struct {
+		Name string `json:"name"`
+	}{"Demo Band"})
+	missing[1].Artists = missing[0].Artists
+	a.spot.pages = map[string]*spotPage{"sp-road": {tracks: make([]spotify.Track, 8), matched: songs, missing: missing}}
+	a.spot.links = []crossplay.Link{{Spotify: "sp-road", Netease: 201, Name: "公路旅行", Direction: crossplay.Both,
+		Synced: time.Date(2026, 11, 27, 9, 30, 0, 0, time.Local)}}
 }
 
 // pressCover draws abstract sleeve art owned by this project, rather than
