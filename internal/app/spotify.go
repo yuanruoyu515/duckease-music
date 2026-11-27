@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"sync/atomic"
 	"time"
 
 	"github.com/egoist/mygo/ui"
@@ -39,14 +38,7 @@ type spotState struct {
 	// links are the pairs of playlists kept in step, read off the main
 	// thread (crossplay.Links reads a file).
 	links []crossplay.Link
-	// open is the Spotify playlist whose page shows, "" for none: read by
-	// the goroutine finding its songs, which stops when it is left.
-	open atomic.Value
 }
-
-// spotSearches bounds the songs a page's opening looks for on NetEase;
-// a button looks for more.
-const spotSearches = 300
 
 // spotPage is a Spotify playlist's page: its songs, and those NetEase has.
 type spotPage struct {
@@ -307,6 +299,11 @@ func (a *app) spotPlaylists(c *ui.Context, title string) {
 			if !readable {
 				t.TextColor(p.faint)
 			}
+			// Matching on in the background, after its page was left.
+			if pg := s.pages[pl.ID]; pg != nil && pg.loading && pg.total > 0 {
+				ui.Box(c).Grow(1)
+				ui.Textf(c, "%d%%", pg.done*100/pg.total).FontSize(11).TextColor(p.faint).FontFeatures("tnum")
+			}
 		})
 		if b.Clicked() {
 			a.open(route{page: pageSpotify, query: pl.ID})
@@ -326,7 +323,9 @@ func (a *app) spotPlaylist(id string) *spotify.Playlist {
 
 // loadSpotPage reads the songs of Spotify playlist id and finds them on
 // NetEase: the first time slowly, a search a song, spaced out, up to
-// spotSearches of them, and only while the page shows.
+// it goes on when the page is left, and each song is looked for once:
+// opened again, or the playlist changed, only the songs not found before
+// are.
 func (a *app) loadSpotPage(id string, again bool) {
 	if a.spot.pages == nil {
 		a.spot.pages = map[string]*spotPage{}
@@ -340,7 +339,6 @@ func (a *app) loadSpotPage(id string, again bool) {
 	pg := &spotPage{loading: true, progress: "正在读取 Spotify 歌单…"}
 	a.spot.pages[id] = pg
 	a.loadLinks()
-	stop := func() bool { open, _ := a.spot.open.Load().(string); return open != id }
 	go func() {
 		tracks, err := spotifyItems(id)
 		var ids []int64
@@ -348,44 +346,28 @@ func (a *app) loadSpotPage(id string, again bool) {
 		for waits := 0; err == nil || waits < spotWaits; waits++ {
 			if err != nil {
 				// NetEase asked for fewer searches: wait as long as it
-				// said, while the page shows, and go on where it stopped.
+				// said, and go on where it stopped.
 				blocked, wait := netease.Blocked(err)
-				if !blocked || stop() {
+				if !blocked {
 					break
 				}
 				wait = max(wait, 20*time.Second)
 				resume := time.Now().Add(wait)
 				a.post(func() { pg.resume = resume })
-				for time.Now().Before(resume) && !stop() {
-					time.Sleep(250 * time.Millisecond)
-				}
+				time.Sleep(time.Until(resume))
 				a.post(func() { pg.resume = time.Time{} })
 			}
 			ids, err = neteaseIDsOf(tracks, crossplay.Budget{
-				MaxSearches: spotSearches,
-				Stop:        stop,
 				Progress: func(done, total int) {
 					looked = done
 					a.post(func() { pg.done, pg.total = done, total })
 				},
 			})
-			if err == nil || errors.Is(err, crossplay.ErrIncomplete) {
+			if err == nil {
 				break
 			}
 		}
-		if errors.Is(err, crossplay.ErrIncomplete) {
-			if stop() {
-				// Left: what was found is kept, and the page picks up there
-				// when opened again.
-				a.post(func() {
-					if a.spot.pages[id] == pg {
-						delete(a.spot.pages, id)
-					}
-				})
-				return
-			}
-			err = nil
-		} else if err == nil {
+		if err == nil {
 			looked = len(tracks)
 		}
 		var matched []netease.Track
@@ -472,7 +454,7 @@ func (a *app) spotHeader(c *ui.Context, id string, pl *spotify.Playlist, pg *spo
 				ui.Text(c, pg.err).FontSize(12.5).TextColor(p.muted)
 			}
 			if pg.pending > 0 {
-				ui.Textf(c, "还有 %d 首没有匹配，为了不触发网易云风控，每次最多匹配 %d 首", pg.pending, spotSearches).FontSize(12.5).TextColor(p.muted)
+				ui.Textf(c, "还有 %d 首没来得及匹配", pg.pending).FontSize(12.5).TextColor(p.muted)
 			}
 			ui.Row(c).Gap(10).Margin(10, 0, 0, 0).Children(func() {
 				if pillButton(c.Key("play"), iconPlay, "播放", p.accent, p.onAccent).Clicked() && len(pg.matched) > 0 {

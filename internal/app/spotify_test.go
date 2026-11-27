@@ -97,19 +97,19 @@ func TestSpotifyImportOnce(t *testing.T) {
 	}
 }
 
-// Leaving a Spotify playlist's page stops finding its songs on NetEase,
-// which would otherwise search on for every song of it.
-func TestLeavingSpotifyPageStopsMatching(t *testing.T) {
+// Leaving a Spotify playlist's page lets finding its songs go on, and
+// coming back shows how far it got, without starting it again.
+func TestLeavingSpotifyPageKeepsMatching(t *testing.T) {
 	items, find := spotifyItems, neteaseIDsOf
 	defer func() { spotifyItems, neteaseIDsOf = items, find }()
 	spotifyItems = func(string) ([]spotify.Track, error) { return make([]spotify.Track, 3), nil }
-	asked, left, stopped := make(chan struct{}), make(chan struct{}), make(chan bool, 1)
+	started, release := make(chan struct{}, 2), make(chan struct{})
 	neteaseIDsOf = func(tracks []spotify.Track, b crossplay.Budget) ([]int64, error) {
-		close(asked)
-		<-left
-		stopped <- b.Stop()
-		return make([]int64, len(tracks)), crossplay.ErrIncomplete
+		started <- struct{}{}
+		<-release
+		return make([]int64, len(tracks)), nil
 	}
+	defer close(release)
 	a := spotApp()
 	a.spot.pages = nil
 	tt := ui.NewTester(a.view, 1200, 800)
@@ -117,11 +117,16 @@ func TestLeavingSpotifyPageStopsMatching(t *testing.T) {
 	if err := tt.Click("Road Trip"); err != nil {
 		t.Fatal(err)
 	}
-	wait(t, asked, "the matching")
+	wait(t, started, "the matching")
 	a.open(route{page: pageHome})
-	close(left)
-	if !wait(t, stopped, "the stop") {
-		t.Error("matching went on after the page was left")
+	a.open(route{page: pageSpotify, query: "S"})
+	select {
+	case <-started:
+		t.Error("coming back started the matching again")
+	default:
+	}
+	if pg := a.spot.pages["S"]; pg == nil || !pg.loading {
+		t.Errorf("the page's matching was dropped: %+v", pg)
 	}
 }
 
