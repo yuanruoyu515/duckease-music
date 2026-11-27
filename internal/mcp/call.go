@@ -21,6 +21,32 @@ var (
 	busyWait = 5 * time.Second
 )
 
+// SessionReady, if set, closes once the NetEase session is read off the
+// keychain, which asks the listener first after each new build. A call
+// waits sessionWait for it, then says what to click.
+var (
+	SessionReady <-chan struct{}
+	sessionWait  = 20 * time.Second
+)
+
+// sessionNote is what a call says while the keychain waits on the
+// listener.
+const sessionNote = "error: DuckEase Music is waiting for macOS to let it read its login from the keychain. Ask the user to look for a keychain dialog about DuckEase Music on their Mac and click Always Allow (始终允许), then call again."
+
+// sessionRead reports whether the session was read, waiting for it a
+// while.
+func sessionRead() bool {
+	if SessionReady == nil {
+		return true
+	}
+	select {
+	case <-SessionReady:
+		return true
+	case <-time.After(sessionWait):
+		return false
+	}
+}
+
 // callCtx is the call running: when it should stop by, whether the
 // client cancelled it, and how to tell the client how far it got.
 type callCtx struct {

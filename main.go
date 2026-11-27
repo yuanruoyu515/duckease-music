@@ -17,7 +17,15 @@ func main() {
 	// the app, with the session the app keeps.
 	if len(os.Args) > 1 && os.Args[1] == "mcp" {
 		log.SetOutput(os.Stderr)
-		netease.RestoreSession()
+		// The keychain may ask the listener first, a new build each time:
+		// answer the client meanwhile, which would give up on a server
+		// silent until then.
+		ready := make(chan struct{})
+		go func() {
+			netease.RestoreSession()
+			close(ready)
+		}()
+		mcp.SessionReady = ready
 		// An agent may read playlist after playlist: space them, as the
 		// app's pages never ask so fast.
 		netease.ReadGap = 250 * time.Millisecond

@@ -24,7 +24,7 @@ Claude Code：
 claude mcp add duckease -- "/Applications/DuckEase Music.app/Contents/MacOS/DuckEase Music" mcp
 ```
 
-第一次调用时，钥匙串可能会问能不能让 DuckEase Music 读取登录信息，点「始终允许」。每次换新构建都可能再问一次，因为 ad hoc 签名会变。
+第一次调用时，钥匙串可能会问能不能让 DuckEase Music 读取登录信息，点「始终允许」。每次换新构建都可能再问一次，因为 ad hoc 签名会变。等你点的时候，MCP 照常应答握手；工具调用等 20 秒还没读到登录信息，会让 agent 提醒你去点钥匙串弹窗，而不是一直不出声。
 
 ## 工具
 

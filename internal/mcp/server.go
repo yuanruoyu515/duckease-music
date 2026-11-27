@@ -234,6 +234,9 @@ func (s *server) handle(req request) (any, *rpcError) {
 		}
 		for _, t := range s.tools {
 			if t.name == p.Name {
+				if !sessionRead() {
+					return errorResult(sessionNote), nil
+				}
 				return call(t, p.Arguments), nil
 			}
 		}

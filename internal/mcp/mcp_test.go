@@ -206,3 +206,22 @@ func TestStuckCallDoesNotHoldOthers(t *testing.T) {
 		t.Errorf("replies:\n%s", out.String())
 	}
 }
+
+// While the keychain waits on the listener, the server still answers
+// initialize, and a call says to look for the dialog instead of hanging.
+func TestServeWhileKeychainWaits(t *testing.T) {
+	ready, wait := SessionReady, sessionWait
+	defer func() { SessionReady, sessionWait = ready, wait }()
+	SessionReady, sessionWait = make(chan struct{}), 10*time.Millisecond
+	in := strings.NewReader(`{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}
+{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"playlists"}}
+`)
+	var out bytes.Buffer
+	if err := Serve(in, &out, "test"); err != nil {
+		t.Fatal(err)
+	}
+	lines := strings.Split(strings.TrimSpace(out.String()), "\n")
+	if len(lines) != 2 || !strings.Contains(lines[0], "protocolVersion") || !strings.Contains(lines[1], "Always Allow") {
+		t.Errorf("replies:\n%s", out.String())
+	}
+}
