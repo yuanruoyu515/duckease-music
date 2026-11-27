@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 	"slices"
 	"testing"
+	"time"
 
 	"netease-music-mygo/internal/netease"
 	"netease-music-mygo/internal/spotify"
@@ -38,9 +39,11 @@ func fakes(t *testing.T, onSpotify []spotify.Track, onNetease []netease.Track, s
 	t.Cleanup(func() {
 		pathFn, spotifyItems, spotifyAdd, neteaseDetail, neteaseAdd, SearchNetease, searchSpotify =
 			saved.path, saved.items, saved.add, saved.detail, saved.neAdd, saved.neSearch, saved.spSearch
-		kept, dirty = nil, false
+		kept = nil
+		clear(pendingNE)
+		clear(pendingSP)
 	})
-	kept, dirty = nil, false
+	kept = nil
 	neteasePause, spotifyPause, neteaseAddPause = 0, 0, 0
 	pathFn = func() (string, error) { return filepath.Join(dir, "crossplay.json"), nil }
 	spotifyItems = func(string) ([]spotify.Track, error) { return onSpotify, nil }
@@ -67,7 +70,7 @@ func TestSyncBothAddsOnlyWhatIsMissing(t *testing.T) {
 		[]spotify.Track{reissue, sp("c", "七里香", "周杰伦")},
 		[]netease.Track{ne(1, "晴天", "周杰伦"), ne(2, "Stay", "Justin Bieber")},
 	)
-	r, err := Sync(Link{Spotify: "S", Netease: 9, Direction: Both}, nil)
+	r, err := Sync(Link{Spotify: "S", Netease: 9, Direction: Both}, Budget{}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -93,7 +96,7 @@ func TestImportKeepsOrder(t *testing.T) {
 		}
 		return []netease.Track{ne(2, "Two", "Y")}, nil
 	}
-	if _, err := Sync(Link{Spotify: "S", Netease: 9, Direction: ToNetease}, nil); err != nil {
+	if _, err := Sync(Link{Spotify: "S", Netease: 9, Direction: ToNetease}, Budget{}, nil); err != nil {
 		t.Fatal(err)
 	}
 	if !slices.Equal(*toNe, []int64{2, 1}) {
@@ -111,12 +114,56 @@ func TestMatchesAreRemembered(t *testing.T) {
 		return []netease.Track{ne(1, "One", "X")}, nil
 	}
 	for range 2 {
-		if _, err := Sync(Link{Spotify: "S", Netease: 9, Direction: ToNetease}, nil); err != nil {
+		if _, err := Sync(Link{Spotify: "S", Netease: 9, Direction: ToNetease}, Budget{}, nil); err != nil {
 			t.Fatal(err)
 		}
 		kept = nil // read back from disk
 	}
 	if asked != 1 {
 		t.Errorf("searched %d times, want 1", asked)
+	}
+}
+
+// A song the listener took out of NetEase since the last sync isn't put
+// back from Spotify.
+func TestSyncKeepsRemovalsOut(t *testing.T) {
+	toNe, _ := fakes(t, []spotify.Track{sp("a", "One", "X")}, nil, nil, []netease.Track{ne(1, "One", "X")})
+	l := Link{Spotify: "S", Netease: 9, Direction: ToNetease, SeenNetease: []int64{1}}
+	r, err := Sync(l, Budget{}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(*toNe) > 0 || r.Removed != 1 {
+		t.Errorf("added %v, report %+v", *toNe, r)
+	}
+}
+
+// A sync that runs out of searches adds nothing, so that the next one,
+// which finds the rest, adds all of them in order.
+func TestSyncOutOfBudgetAddsNothing(t *testing.T) {
+	toNe, _ := fakes(t, []spotify.Track{sp("a", "One", "X"), sp("b", "Two", "Y")}, nil, nil, []netease.Track{ne(1, "One", "X")})
+	if _, err := Sync(Link{Spotify: "S", Netease: 9, Direction: ToNetease}, Budget{MaxSearches: 1}, nil); err != ErrIncomplete {
+		t.Fatalf("err %v", err)
+	}
+	if len(*toNe) > 0 {
+		t.Errorf("added %v before finding all", *toNe)
+	}
+}
+
+// A link the other process wrote meanwhile survives this one's write.
+func TestWritesKeepTheOtherProcesss(t *testing.T) {
+	fakes(t, nil, nil, nil, nil)
+	if err := SetLink(Link{Spotify: "A", Netease: 1}); err != nil {
+		t.Fatal(err)
+	}
+	// The other process adds B, writing the file behind this one's back.
+	mu.Lock()
+	saved := kept
+	update(func(s *store) { s.Links = append(s.Links, Link{Spotify: "B", Netease: 2}) })
+	kept, keptMod = saved, time.Time{}
+	mu.Unlock()
+	SetLink(Link{Spotify: "C", Netease: 3})
+	if got := Links(); len(got) != 3 {
+		t.Errorf("links %+v, want A, B and C", got)
 	}
 }

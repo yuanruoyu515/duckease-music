@@ -69,7 +69,7 @@ func TestSpotifyImportOnce(t *testing.T) {
 	done := make(chan struct{})
 	imp := crossImport
 	defer func() { crossImport = imp; close(done) }()
-	crossImport = func(id, name string, _ crossplay.Progress) (crossplay.Link, crossplay.Report, error) {
+	crossImport = func(id, name string, _ crossplay.Budget, _ crossplay.Progress) (crossplay.Link, crossplay.Report, error) {
 		asked <- id + " " + name
 		<-done // runs on until the test ends
 		return crossplay.Link{}, crossplay.Report{}, nil
@@ -91,5 +91,33 @@ func TestSpotifyImportOnce(t *testing.T) {
 	case got := <-asked:
 		t.Errorf("imported again: %q", got)
 	default:
+	}
+}
+
+// Leaving a Spotify playlist's page stops finding its songs on NetEase,
+// which would otherwise search on for every song of it.
+func TestLeavingSpotifyPageStopsMatching(t *testing.T) {
+	items, find := spotifyItems, neteaseIDsOf
+	defer func() { spotifyItems, neteaseIDsOf = items, find }()
+	spotifyItems = func(string) ([]spotify.Track, error) { return make([]spotify.Track, 3), nil }
+	asked, left, stopped := make(chan struct{}), make(chan struct{}), make(chan bool, 1)
+	neteaseIDsOf = func(tracks []spotify.Track, b crossplay.Budget) ([]int64, error) {
+		close(asked)
+		<-left
+		stopped <- b.Stop()
+		return make([]int64, len(tracks)), crossplay.ErrIncomplete
+	}
+	a := spotApp()
+	a.spot.pages = nil
+	tt := ui.NewTester(a.view, 1200, 800)
+	tt.Frame()
+	if err := tt.Click("Road Trip"); err != nil {
+		t.Fatal(err)
+	}
+	wait(t, asked, "the matching")
+	a.open(route{page: pageHome})
+	close(left)
+	if !wait(t, stopped, "the stop") {
+		t.Error("matching went on after the page was left")
 	}
 }

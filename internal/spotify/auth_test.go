@@ -2,6 +2,7 @@ package spotify
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -35,5 +36,32 @@ func TestLoginChecksState(t *testing.T) {
 	get(url.Values{"state": {l.state}, "error": {"access_denied"}})
 	if err := <-done; err == nil || !strings.Contains(err.Error(), "access_denied") {
 		t.Errorf("Wait = %v", err)
+	}
+}
+
+type roundTrip func(*http.Request) (*http.Response, error)
+
+func (f roundTrip) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
+
+// A refresh refused because the other process refreshed at the same
+// moment, rotating the token, takes what that process kept, instead of
+// deleting it and signing both out.
+func TestRefreshRaceKeepsTheOthersToken(t *testing.T) {
+	keychain := []byte(`{"clientId":"c","refresh":"old","access":"x","expiry":"2000-01-01T00:00:00Z"}`)
+	r, w, d, client := readSecret, writeSecret, deleteSecret, httpClient
+	defer func() { readSecret, writeSecret, deleteSecret, httpClient, cur = r, w, d, client, nil }()
+	readSecret = func() ([]byte, error) { return keychain, nil }
+	writeSecret = func(b []byte) error { keychain = b; return nil }
+	deleted := false
+	deleteSecret = func() { deleted = true }
+	cur = nil
+	httpClient = &http.Client{Transport: roundTrip(func(req *http.Request) (*http.Response, error) {
+		// Meanwhile the other process refreshed and kept a new token.
+		keychain = []byte(`{"clientId":"c","refresh":"new","access":"fresh","expiry":"2999-01-01T00:00:00Z"}`)
+		return &http.Response{StatusCode: 400, Body: io.NopCloser(strings.NewReader(`{"error":"invalid_grant"}`)), Header: http.Header{}}, nil
+	})}
+	tok, err := accessToken()
+	if err != nil || tok != "fresh" || deleted {
+		t.Errorf("token %q, err %v, deleted %v", tok, err, deleted)
 	}
 }

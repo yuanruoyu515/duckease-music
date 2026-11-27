@@ -38,7 +38,8 @@ claude mcp add duckease -- "/Applications/DuckEase Music.app/Contents/MacOS/Duck
 | `spotify_playlists` | 列出 Spotify 歌单，带关联的网易云歌单 id |
 | `spotify_playlist` | 读一个自己的 Spotify 歌单的歌 |
 | `spotify_import` / `spotify_export` | 把 Spotify 歌单复制到网易云，或反过来，并关联两个歌单 |
-| `sync_links` / `sync_playlist` | 查看关联、同步关联的歌单（只加不删） |
+| `sync_links` / `sync_playlist` | 查看关联、同步关联的歌单（只加不删，不会加回你删掉的歌） |
+| `fix_match` | 改正一首 Spotify 歌对应的网易云歌曲 |
 
 Spotify 的工具要先在 app 设置里连接 Spotify，见 [SPOTIFY.md](SPOTIFY.md)。
 
@@ -47,17 +48,22 @@ Spotify 的工具要先在 app 设置里连接 Spotify，见 [SPOTIFY.md](SPOTIF
 - 回复是带表头的制表符分隔文本，一首歌一行：`id  歌名  歌手  专辑  时长`，不用 JSON，字段名不重复出现，比同样内容的 JSON 短得多。
 - 歌单长的时候，用 `playlist` 的 `query`、`offset`、`limit` 只拿需要的部分。
 - 导入一份歌单，`match` 一次调用就够，用不着每首歌搜一次。
+- 歌单 id 可以直接传网易云链接（`music.163.com/#/playlist?id=…`），Spotify 的 id 可以传 URI 或分享链接。
 - 读过的歌单和歌单列表缓存一分钟，同一轮对话里反复看不会重复请求网易云。改过的歌单会马上作废缓存。
 
 ## 风控
 
-写操作走的是 app 批量编辑那套节奏：每次最多 200 首，两次请求之间隔 400 毫秒；`match` 每搜一首隔 200 毫秒，遇到 `-460` 立刻停下，告诉 agent 剩下的稍后再做。请求一次只处理一个，不会并发。别让 agent 同时开好几个写操作。
+- 改歌单和搜歌的请求，不管是 app 还是 MCP 发的，两次之间至少隔 400 毫秒。两边共用用户数据目录里的 `netease-guard.json`。
+- 任何请求遇到 `-460`（包括播放时取歌曲地址），之后 1 分钟内改歌单和搜歌的请求一律不发；10 分钟内再被拒一次就翻倍，最长 15 分钟。返回给 agent 的错误会写明还要等多久，并提醒它别提前重试。
+- MCP 读歌单的请求之间隔 250 毫秒。
+- 单次调用的上限：`match` 100 行，加歌 1000 首，删歌和喜欢 200 首。超出会让 agent 分几次调。
+- 工具调用一个接一个地执行，不并发；执行期间照常响应 ping，客户端取消了还没开始的调用就不再执行。
 
 只有你自己建的歌单能改。收藏的别人的歌单只能读，改它会直接报错，不会发请求。
 
 ## 代码
 
 - `main.go`：参数是 `mcp` 时走 `internal/mcp.Serve`，不启动界面。
-- `internal/mcp/server.go`：JSON-RPC 和 MCP 握手，支持协议 2024-11-05、2025-03-26、2025-06-18。
+- `internal/mcp/server.go`：JSON-RPC 和 MCP 握手，支持协议 2024-11-05 和 2025-06-18（2025-03-26 带 JSON-RPC 批量请求，没有实现）。
 - `internal/mcp/tools.go`：各个工具。
 - `internal/match`：按歌名、歌手、时长判断两首歌是不是同一首。Spotify 导入也用它。

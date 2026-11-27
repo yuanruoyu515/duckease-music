@@ -29,6 +29,15 @@ type Report struct {
 	// Missing are the songs found on one side only: "title - artists".
 	MissingOnNetease []string
 	MissingOnSpotify []string
+	// Removed is how many songs the listener took out of one side since
+	// the last sync, which weren't put back.
+	Removed int
+	// Refused is how many songs NetEase turned away, as some it says the
+	// playlist has.
+	Refused int
+	// Truncated says the NetEase playlist has more than the 1000 songs a
+	// sync can read, whose rest didn't go to Spotify.
+	Truncated bool
 }
 
 func (r Report) String() string {
@@ -46,9 +55,12 @@ func (p Progress) say(step string, done, total int) {
 }
 
 // Sync brings the songs of l's playlists across, the way l.Direction
-// says. It only adds: a song taken out of one side stays on the other,
-// so that a mistake or a match gone wrong never deletes anything.
-func Sync(l Link, progress Progress) (Report, error) {
+// says. It only adds, never deletes; and a song the listener took out of
+// one side since the last sync stays out. It finds every song first and
+// adds none until it has, so that a sync cut short by its Budget
+// (ErrIncomplete) adds nothing, and the next, finding what this one
+// found, picks up there and adds in order.
+func Sync(l Link, b Budget, progress Progress) (Report, error) {
 	var r Report
 	progress.say("读取 Spotify 歌单", 0, 0)
 	sp, err := spotifyItems(l.Spotify)
@@ -60,85 +72,136 @@ func Sync(l Link, progress Progress) (Report, error) {
 	if err != nil {
 		return r, err
 	}
+	// All its songs, by id: those past the first 1000 too, which aren't
+	// read in full; NetEase turns a whole request away for one song the
+	// playlist has.
 	onNetease := map[int64]bool{}
+	for _, t := range ne.TrackIDs {
+		onNetease[t.ID] = true
+	}
 	for _, t := range ne.Tracks {
 		onNetease[t.ID] = true
 	}
+	r.Truncated = len(ne.TrackIDs) > len(ne.Tracks)
+	onSpotify := map[string]bool{}
+	for _, t := range sp {
+		onSpotify[t.URI] = true
+	}
+	seenNE := map[int64]bool{}
+	for _, id := range l.SeenNetease {
+		seenNE[id] = true
+	}
+	seenSP := map[string]bool{}
+	for _, u := range l.SeenSpotify {
+		seenSP[u] = true
+	}
+	toNetease := l.Direction == ToNetease || l.Direction == Both
+	toSpotify := l.Direction == ToSpotify || l.Direction == Both
 
-	// The NetEase ids of Spotify's songs: needed to bring them to NetEase,
-	// and, both ways, to know which of NetEase's songs Spotify has
-	// already, though as another release than the one search finds.
+	// Find the songs, both ways, before adding any.
+	// Both ways, the NetEase ids of Spotify's songs also tell which of
+	// NetEase's songs Spotify has already, as another release than the
+	// one its search finds.
 	var fromSpotify []int64
-	if l.Direction == ToNetease || l.Direction == Both {
-		fromSpotify, err = NeteaseIDs(sp, func(done, total int) { progress.say("在网易云找歌", done, total) })
-		if err != nil {
+	if toNetease {
+		nb := b
+		nb.Progress = func(done, total int) { progress.say("在网易云找歌", done, total) }
+		if fromSpotify, err = NeteaseIDs(sp, nb); err != nil {
 			return r, err
 		}
-		var add []int64
-		seen := map[int64]bool{}
-		for i, id := range fromSpotify {
-			switch {
-			case id == 0:
-				r.MissingOnNetease = append(r.MissingOnNetease, sp[i].Name+" - "+sp[i].ArtistNames())
-			case !onNetease[id] && !seen[id]:
-				seen[id] = true
-				add = append(add, id)
-			}
-		}
-		if len(add) > 0 {
-			progress.say("添加到网易云", 0, len(add))
-			if err := addToNetease(l.Netease, add); err != nil {
-				return r, err
-			}
-			r.AddedToNetease = len(add)
-		}
 	}
-
-	if l.Direction == ToSpotify || l.Direction == Both {
-		onSpotify := map[string]bool{}
-		for _, t := range sp {
-			onSpotify[t.URI] = true
-		}
+	var todo []netease.Track
+	var uris []string
+	if toSpotify {
 		covered := map[int64]bool{}
 		for _, id := range fromSpotify {
 			covered[id] = true
 		}
-		var todo []netease.Track
 		for _, t := range ne.Tracks {
 			if !covered[t.ID] {
 				todo = append(todo, t)
 			}
 		}
-		uris, err := SpotifyURIs(todo, func(done, total int) { progress.say("在 Spotify 找歌", done, total) })
-		if err != nil {
+		sb := b
+		sb.Progress = func(done, total int) { progress.say("在 Spotify 找歌", done, total) }
+		if uris, err = SpotifyURIs(todo, sb); err != nil {
 			return r, err
 		}
-		var add []string
+	}
+
+	var addNE []int64
+	if toNetease {
+		seen := map[int64]bool{}
+		for i, id := range fromSpotify {
+			switch {
+			case id == 0:
+				r.MissingOnNetease = append(r.MissingOnNetease, sp[i].Name+" - "+sp[i].ArtistNames())
+			case onNetease[id] || seen[id]:
+			case seenNE[id]:
+				r.Removed++
+			default:
+				seen[id] = true
+				addNE = append(addNE, id)
+			}
+		}
+	}
+	var addSP []string
+	if toSpotify {
 		for i, u := range uris {
 			switch {
 			case u == "":
 				r.MissingOnSpotify = append(r.MissingOnSpotify, todo[i].Name+" - "+todo[i].ArtistNames())
-			case !onSpotify[u]:
+			case onSpotify[u]:
+			case seenSP[u]:
+				r.Removed++
+			default:
 				onSpotify[u] = true
-				add = append(add, u)
+				addSP = append(addSP, u)
 			}
-		}
-		if len(add) > 0 {
-			progress.say("添加到 Spotify", 0, len(add))
-			if err := spotifyAdd(l.Spotify, add); err != nil {
-				return r, err
-			}
-			r.AddedToSpotify = len(add)
 		}
 	}
+
+	if len(addNE) > 0 {
+		progress.say("添加到网易云", 0, len(addNE))
+		added, refused, err := addToNetease(l.Netease, addNE)
+		r.AddedToNetease, r.Refused = len(added), refused
+		for _, id := range added {
+			onNetease[id] = true
+		}
+		if err != nil {
+			l.SeenNetease = keys(onNetease)
+			SetLink(l)
+			return r, err
+		}
+	}
+	if len(addSP) > 0 {
+		progress.say("添加到 Spotify", 0, len(addSP))
+		if err := spotifyAdd(l.Spotify, addSP); err != nil {
+			return r, err
+		}
+		r.AddedToSpotify = len(addSP)
+	}
 	l.Synced = time.Now()
-	SetLink(l)
-	return r, Save()
+	l.SeenNetease = keys(onNetease)
+	l.SeenSpotify = keys(onSpotify)
+	return r, SetLink(l)
+}
+
+func keys[K comparable](m map[K]bool) []K {
+	out := make([]K, 0, len(m))
+	for k, on := range m {
+		if on {
+			out = append(out, k)
+		}
+	}
+	return out
 }
 
 // addToNetease adds songs to playlist pid in the order given: NetEase
-// puts what it adds at the top, so they go last first, a chunk at a time.
-func addToNetease(pid int64, songs []int64) error {
+// puts each song it adds at the top, one request's too, so they go last
+// first, a chunk at a time. It returns those added, and how many a chunk
+// NetEase turned away as already there held.
+func addToNetease(pid int64, songs []int64) (added []int64, refused int, err error) {
 	rev := make([]int64, len(songs))
 	for i, s := range songs {
 		rev[len(songs)-1-i] = s
@@ -147,36 +210,52 @@ func addToNetease(pid int64, songs []int64) error {
 		if i > 0 {
 			time.Sleep(neteaseAddPause)
 		}
-		err := neteaseAdd(pid, rev[i:min(i+neteaseChunk, len(rev))]...)
-		if err != nil && !errors.Is(err, netease.ErrInPlaylist) {
-			return err
+		chunk := rev[i:min(i+neteaseChunk, len(rev))]
+		switch err := neteaseAdd(pid, chunk...); {
+		case errors.Is(err, netease.ErrInPlaylist):
+			refused += len(chunk)
+		case err != nil:
+			return added, refused, err
+		default:
+			added = append(added, chunk...)
 		}
 	}
-	return nil
+	return added, refused, nil
 }
 
 // ImportToNetease makes a NetEase playlist of the songs of Spotify
-// playlist sp, named name, and pairs the two.
-func ImportToNetease(sp, name string, progress Progress) (Link, Report, error) {
+// playlist sp, named name, and pairs the two. It reads the Spotify
+// playlist first, so that one it can't read leaves nothing behind.
+func ImportToNetease(sp, name string, b Budget, progress Progress) (Link, Report, error) {
+	if _, err := spotifyItems(sp); err != nil {
+		return Link{}, Report{}, err
+	}
 	pl, err := neteaseCreate(name)
 	if err != nil {
 		return Link{}, Report{}, err
 	}
 	l := Link{Spotify: sp, Netease: pl.ID, Name: name, Direction: ToNetease}
-	SetLink(l)
-	r, err := Sync(l, progress)
+	if err := SetLink(l); err != nil {
+		return l, Report{}, err
+	}
+	r, err := Sync(l, b, progress)
 	return l, r, err
 }
 
 // ExportToSpotify makes a Spotify playlist of the songs of NetEase
 // playlist id, named name, and pairs the two.
-func ExportToSpotify(id int64, name string, progress Progress) (Link, Report, error) {
+func ExportToSpotify(id int64, name string, b Budget, progress Progress) (Link, Report, error) {
+	if _, err := neteaseDetail(id); err != nil {
+		return Link{}, Report{}, err
+	}
 	pl, err := spotifyCreate(name, "From NetEase playlist "+strconv.FormatInt(id, 10)+", by DuckEase Music")
 	if err != nil {
 		return Link{}, Report{}, err
 	}
 	l := Link{Spotify: pl.ID, Netease: id, Name: name, Direction: ToSpotify}
-	SetLink(l)
-	r, err := Sync(l, progress)
+	if err := SetLink(l); err != nil {
+		return l, Report{}, err
+	}
+	r, err := Sync(l, b, progress)
 	return l, r, err
 }

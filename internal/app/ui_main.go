@@ -117,6 +117,11 @@ func (a *app) show(r route) {
 		a.stopPicking()
 	}
 	a.route = r
+	open := ""
+	if r.page == pageSpotify {
+		open = r.query
+	}
+	a.spot.open.Store(open)
 	if r.page == pageSearch {
 		a.query, a.searched = r.query, r
 	}

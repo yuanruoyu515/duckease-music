@@ -10,12 +10,31 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
 const apiBase = "https://api.spotify.com/v1"
 
 var httpClient = &http.Client{Timeout: 20 * time.Second}
+
+// gap is the least time between two calls of this process, whoever makes
+// them: a Development Mode account's calls count against one quota.
+var gap = 120 * time.Millisecond
+
+var (
+	paceMu   sync.Mutex
+	lastCall time.Time
+)
+
+func pace() {
+	paceMu.Lock()
+	defer paceMu.Unlock()
+	if wait := time.Until(lastCall.Add(gap)); wait > 0 {
+		time.Sleep(wait)
+	}
+	lastCall = time.Now()
+}
 
 // APIError is a refusal from the Web API.
 type APIError struct {
@@ -54,6 +73,7 @@ func call(method, path string, query url.Values, body, out any) error {
 		payload, _ = json.Marshal(body)
 	}
 	for try := 0; ; try++ {
+		pace()
 		req, _ := http.NewRequest(method, u, bytes.NewReader(payload))
 		req.Header.Set("Authorization", "Bearer "+tok)
 		if body != nil {

@@ -23,7 +23,9 @@ const protocolVersion = "2025-06-18"
 
 // supported are the protocol versions the server speaks; it answers a
 // client asking for another with the latest.
-var supported = map[string]bool{"2024-11-05": true, "2025-03-26": true, "2025-06-18": true}
+// 2025-03-26 is left out: it has JSON-RPC batches, which the server
+// doesn't take.
+var supported = map[string]bool{"2024-11-05": true, "2025-06-18": true}
 
 type request struct {
 	JSONRPC string          `json:"jsonrpc"`
@@ -44,8 +46,10 @@ type response struct {
 	Error   *rpcError       `json:"error,omitempty"`
 }
 
-// Serve answers the requests read from in on out until in ends. Requests
-// are handled one at a time, so that NetEase sees no bursts.
+// Serve answers the requests read from in on out until in ends. Tools
+// run one at a time, in the order asked, so that NetEase sees no bursts;
+// a ping or a list of the tools is answered meanwhile, and a call the
+// client cancels before it starts doesn't run.
 func Serve(in io.Reader, out io.Writer, version string) error {
 	s := &server{version: version, tools: newTools()}
 	enc := json.NewEncoder(out)
@@ -57,6 +61,28 @@ func Serve(in io.Reader, out io.Writer, version string) error {
 			log.Printf("mcp: write: %v", err)
 		}
 	}
+	var cancelMu sync.Mutex
+	cancelled := map[string]bool{}
+	calls := make(chan request, 64)
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		for req := range calls {
+			cancelMu.Lock()
+			skip := cancelled[string(req.ID)]
+			delete(cancelled, string(req.ID))
+			cancelMu.Unlock()
+			if skip {
+				continue
+			}
+			result, rerr := s.handle(req)
+			send(response{JSONRPC: "2.0", ID: req.ID, Result: result, Error: rerr})
+		}
+	}()
+	defer func() {
+		close(calls)
+		<-done
+	}()
 	sc := bufio.NewScanner(in)
 	sc.Buffer(make([]byte, 1<<20), 16<<20)
 	for sc.Scan() {
@@ -67,6 +93,20 @@ func Serve(in io.Reader, out io.Writer, version string) error {
 		var req request
 		if err := json.Unmarshal(line, &req); err != nil {
 			send(response{JSONRPC: "2.0", ID: json.RawMessage("null"), Error: &rpcError{-32700, "parse error"}})
+			continue
+		}
+		switch {
+		case req.Method == "notifications/cancelled":
+			var p struct {
+				RequestID json.RawMessage `json:"requestId"`
+			}
+			json.Unmarshal(req.Params, &p)
+			cancelMu.Lock()
+			cancelled[string(p.RequestID)] = true
+			cancelMu.Unlock()
+			continue
+		case req.Method == "tools/call" && len(req.ID) > 0:
+			calls <- req
 			continue
 		}
 		result, rerr := s.handle(req)

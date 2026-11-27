@@ -26,6 +26,10 @@ var httpClient = &http.Client{Timeout: 20 * time.Second}
 type Artist struct {
 	ID   int64  `json:"id"`
 	Name string `json:"name"`
+	// Their other names, as Jay Chou for 周杰伦: what Spotify may call
+	// them.
+	Alias []string `json:"alias,omitempty"`
+	Trans []string `json:"tns,omitempty"`
 }
 
 type Album struct {

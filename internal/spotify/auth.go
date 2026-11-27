@@ -15,6 +15,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -57,9 +58,19 @@ type session struct {
 }
 
 var (
-	mu  sync.Mutex
-	cur *session // nil until loaded
+	mu       sync.Mutex
+	cur      *session  // nil until loaded
+	loadedAt time.Time // when cur was read from the keychain
+	// refreshing is held while a token is refreshed over the network,
+	// which mu, held by quick reads such as the settings' on the main
+	// thread, isn't.
+	refreshing sync.Mutex
 )
+
+// staleAfter is how long what was read of the keychain holds: the other
+// process, the app or the MCP server, may connect, disconnect or
+// refresh meanwhile.
+const staleAfter = 30 * time.Second
 
 // Storage of the session: the keychain, or a private file in development,
 // as netease keeps its own.
@@ -108,10 +119,10 @@ func sessionFile() (string, error) {
 
 // load returns the session kept, or an empty one. mu is held.
 func load() *session {
-	if cur != nil {
+	if cur != nil && time.Since(loadedAt) < staleAfter {
 		return cur
 	}
-	cur = &session{}
+	cur, loadedAt = &session{}, time.Now()
 	if b, err := readSecret(); err == nil {
 		json.Unmarshal(b, cur)
 	}
@@ -121,7 +132,7 @@ func load() *session {
 // save keeps s; the access token goes too, so that the MCP server, another
 // process, needn't refresh it at once. mu is held.
 func save(s *session) error {
-	cur = s
+	cur, loadedAt = s, time.Now()
 	b, _ := json.Marshal(s)
 	return writeSecret(b)
 }
@@ -262,10 +273,14 @@ func (l *Login) Wait(ctx context.Context) error {
 		return err
 	}
 	mu.Lock()
-	cur = s
+	before := cur
+	cur, loadedAt = s, time.Now()
 	mu.Unlock()
 	me, err := Me()
 	if err != nil {
+		mu.Lock()
+		cur = before // not connected after all
+		mu.Unlock()
 		return err
 	}
 	mu.Lock()
@@ -309,31 +324,59 @@ func (s *session) token(form url.Values) error {
 // accessToken returns a token good for a while, refreshing it if needed.
 func accessToken() (string, error) {
 	mu.Lock()
-	defer mu.Unlock()
-	s := load()
+	s := *load()
+	mu.Unlock()
 	if s.Refresh == "" {
 		return "", ErrNotConnected
 	}
 	if s.Access != "" && time.Now().Before(s.Expiry) {
 		return s.Access, nil
 	}
-	// The app and the MCP server each refresh: take what the other kept,
-	// whose refresh token may have replaced this one.
-	cur = nil
-	s = load()
-	if s.Access != "" && time.Now().Before(s.Expiry) {
-		return s.Access, nil
+	refreshing.Lock()
+	defer refreshing.Unlock()
+	// Take what the other process kept: it may have refreshed already,
+	// and its refresh token replaced this one.
+	fresh := func() session {
+		mu.Lock()
+		defer mu.Unlock()
+		cur = nil
+		return *load()
 	}
-	next := *s
-	if err := next.token(url.Values{"grant_type": {"refresh_token"}, "refresh_token": {s.Refresh}}); err != nil {
-		if strings.Contains(err.Error(), "invalid_grant") {
-			// Revoked, or the app was deleted: connect again.
-			deleteSecret()
-			cur = &session{ClientID: s.ClientID}
+	s = fresh()
+	for try := 0; ; try++ {
+		if s.Refresh == "" {
 			return "", ErrNotConnected
 		}
-		return "", err
+		if s.Access != "" && time.Now().Before(s.Expiry) {
+			return s.Access, nil
+		}
+		next := s
+		err := next.token(url.Values{"grant_type": {"refresh_token"}, "refresh_token": {s.Refresh}})
+		if err == nil {
+			mu.Lock()
+			if err := save(&next); err != nil {
+				// The rotated refresh token would be lost with this
+				// process: say so, but use the access token meanwhile.
+				log.Printf("spotify: keep session: %v", err)
+			}
+			mu.Unlock()
+			return next.Access, nil
+		}
+		if !strings.Contains(err.Error(), "invalid_grant") {
+			return "", err
+		}
+		// Refused: the other process may have refreshed at the same moment,
+		// replacing the token this one sent. Try what it kept, once;
+		// refused again, the connection is gone (revoked, or the app
+		// deleted), and the listener connects again.
+		if again := fresh(); try == 0 && again.Refresh != s.Refresh {
+			s = again
+			continue
+		}
+		mu.Lock()
+		deleteSecret()
+		cur, loadedAt = &session{ClientID: s.ClientID}, time.Now()
+		mu.Unlock()
+		return "", ErrNotConnected
 	}
-	save(&next)
-	return next.Access, nil
 }

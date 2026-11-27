@@ -46,3 +46,13 @@ func TestParse(t *testing.T) {
 		t.Errorf("Parse title alone = %+v", s)
 	}
 }
+
+// The same title by someone else isn't taken for the song unless the
+// length is the same too, as a cover of another length isn't.
+func TestOtherArtistNeedsSameLength(t *testing.T) {
+	want := Song{Title: "Stay", Artists: []string{"Rihanna"}, Length: 240 * time.Second}
+	cover := Song{Title: "Stay", Artists: []string{"Someone"}, Length: 246 * time.Second}
+	if s := Score(want, cover); s >= Threshold {
+		t.Errorf("a cover scored %.2f", s)
+	}
+}

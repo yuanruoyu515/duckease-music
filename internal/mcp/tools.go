@@ -17,6 +17,7 @@ import (
 // The NetEase calls the tools make; tests replace them.
 var (
 	account         = netease.Account
+	restoreSession  = netease.RestoreSession
 	userPlaylists   = netease.UserPlaylists
 	playlistDetail  = netease.PlaylistDetail
 	searchSongs     = netease.Search
@@ -78,7 +79,6 @@ func (t tool) describe() map[string]any {
 		"description": t.description,
 		"inputSchema": schema,
 		"annotations": map[string]any{
-			"title":           t.title,
 			"readOnlyHint":    t.readOnly,
 			"destructiveHint": t.destructive,
 			"idempotentHint":  t.readOnly,
@@ -92,6 +92,13 @@ type id int64
 
 func (i *id) UnmarshalJSON(b []byte) error {
 	s := strings.Trim(string(b), `"`)
+	// A link, as music.163.com/#/playlist?id=123 or y.music.163.com/m/song?id=123&…
+	if i := strings.LastIndex(s, "id="); i >= 0 {
+		s = s[i+3:]
+		if j := strings.IndexAny(s, "&#/"); j >= 0 {
+			s = s[:j]
+		}
+	}
 	n, err := strconv.ParseInt(s, 10, 64)
 	if err != nil {
 		return fmt.Errorf("not an id: %s", b)
@@ -193,9 +200,10 @@ func neteaseTools() []tool {
 		},
 		{
 			name: "rename_playlist", title: "Rename a playlist",
-			params:   map[string]any{"id": playlistArg, "name": strParam("new name")},
-			required: []string{"id", "name"},
-			run:      rename,
+			description: "Rename one of the user's own playlists.",
+			params:      map[string]any{"id": playlistArg, "name": strParam("new name")},
+			required:    []string{"id", "name"},
+			run:         rename,
 		},
 		{
 			name: "delete_playlist", title: "Delete a playlist", destructive: true,
@@ -222,6 +230,7 @@ var cache struct {
 	sync.Mutex
 	uid       int64
 	nick      string
+	uidAt     time.Time
 	lists     []netease.Playlist // made, then saved
 	made      map[int64]bool
 	listsAt   time.Time
@@ -244,12 +253,17 @@ func changed(pid int64) {
 
 func me() (int64, error) {
 	cache.Lock()
-	uid := cache.uid
+	uid, at := cache.uid, cache.uidAt
 	cache.Unlock()
-	if uid != 0 {
+	if uid != 0 && time.Since(at) < 5*cacheFor {
 		return uid, nil
 	}
 	p, err := account()
+	if err == nil && p == nil {
+		// Signed in, or out, in the app since this server started.
+		restoreSession()
+		p, err = account()
+	}
 	if err != nil {
 		return 0, err
 	}
@@ -257,7 +271,10 @@ func me() (int64, error) {
 		return 0, errors.New("not signed in: open DuckEase Music and sign in to NetEase first")
 	}
 	cache.Lock()
-	cache.uid, cache.nick = p.UserID, p.Nickname
+	if cache.uid != p.UserID { // another account: forget the other's
+		cache.listsAt, cache.playlists = time.Time{}, nil
+	}
+	cache.uid, cache.nick, cache.uidAt = p.UserID, p.Nickname, time.Now()
 	cache.Unlock()
 	return p.UserID, nil
 }
@@ -517,26 +534,39 @@ func duplicates(args json.RawMessage) (string, error) {
 }
 
 // inChunks sends songs to NetEase chunk at a time, pause apart.
-func inChunks(songs []int64, send func([]int64) error) error {
+// It returns how many went, and how many a chunk NetEase turned away as
+// already there held.
+func inChunks(songs []int64, send func([]int64) error) (sent, refused int, err error) {
 	for i := 0; i < len(songs); i += chunk {
 		if i > 0 {
 			time.Sleep(pause)
 		}
-		if err := send(songs[i:min(i+chunk, len(songs))]); err != nil && !errors.Is(err, netease.ErrInPlaylist) {
-			return err
+		c := songs[i:min(i+chunk, len(songs))]
+		switch err := send(c); {
+		case errors.Is(err, netease.ErrInPlaylist):
+			refused += len(c)
+		case err != nil:
+			return sent, refused, err
+		default:
+			sent += len(c)
 		}
 	}
-	return nil
+	return sent, refused, nil
 }
 
 // fresh drops the songs pid already has, so that adding them doesn't fail
 // the chunk.
-func fresh(pid int64, songs []int64) []int64 {
+func fresh(pid int64, songs []int64) ([]int64, error) {
 	pl, err := playlist(pid)
 	if err != nil {
-		return songs
+		return nil, err
 	}
+	// All its songs, past the first 1000 too, by id: NetEase turns a
+	// whole request away for one song the playlist has.
 	has := map[int64]bool{}
+	for _, t := range pl.TrackIDs {
+		has[t.ID] = true
+	}
 	for _, t := range pl.Tracks {
 		has[t.ID] = true
 	}
@@ -547,6 +577,30 @@ func fresh(pid int64, songs []int64) []int64 {
 			seen[s] = true
 			out = append(out, s)
 		}
+	}
+	return out, nil
+}
+
+// unique drops repeats from songs, keeping the first of each.
+func unique(songs []int64) []int64 {
+	seen := map[int64]bool{}
+	var out []int64
+	for _, s := range songs {
+		if !seen[s] {
+			seen[s] = true
+			out = append(out, s)
+		}
+	}
+	return out
+}
+
+// reversed returns songs last first: NetEase puts each song it adds at
+// the top, those of one request too, so they go last first to keep the
+// order given.
+func reversed(songs []int64) []int64 {
+	out := make([]int64, len(songs))
+	for i, s := range songs {
+		out[len(songs)-1-i] = s
 	}
 	return out
 }
@@ -573,20 +627,14 @@ func create(args json.RawMessage) (string, error) {
 	if len(a.Songs) == 0 {
 		return fmt.Sprintf("created %d %s\n", pl.ID, clean(pl.Name)), nil
 	}
-	// Adding puts songs at the top: send them last first, so they keep
-	// the order given.
-	songs := ids(a.Songs)
-	rev := make([]int64, len(songs))
-	for i, s := range songs {
-		rev[len(songs)-1-i] = s
-	}
+	songs := unique(ids(a.Songs))
 	time.Sleep(pause)
-	err = inChunks(rev, func(c []int64) error { return addToPlaylist(pl.ID, c...) })
+	sent, _, err := inChunks(reversed(songs), func(c []int64) error { return addToPlaylist(pl.ID, c...) })
 	changed(pl.ID)
 	if err != nil {
-		return "", fmt.Errorf("created %d %s, but adding songs failed: %w", pl.ID, pl.Name, err)
+		return "", fmt.Errorf("created %d %s, but only %d of %d songs went in before: %w", pl.ID, pl.Name, sent, len(songs), err)
 	}
-	return fmt.Sprintf("created %d %s with %d songs\n", pl.ID, clean(pl.Name), len(songs)), nil
+	return fmt.Sprintf("created %d %s with %d songs\n", pl.ID, clean(pl.Name), sent), nil
 }
 
 func edit(args json.RawMessage, add bool) (string, error) {
@@ -602,7 +650,7 @@ func edit(args json.RawMessage, add bool) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	songs := ids(a.Songs)
+	songs := unique(ids(a.Songs))
 	if len(songs) == 0 {
 		return "", errors.New("no song_ids")
 	}
@@ -613,29 +661,31 @@ func edit(args json.RawMessage, add bool) (string, error) {
 	if err := tooMany(len(songs), most, "songs"); err != nil {
 		return "", err
 	}
-	if add {
-		asked := len(songs)
-		songs = fresh(pid, songs)
-		if len(songs) == 0 {
-			return fmt.Sprintf("%s has all %d songs already\n", clean(p.Name), asked), nil
-		}
-		rev := make([]int64, len(songs))
-		for i, s := range songs {
-			rev[len(songs)-1-i] = s
-		}
-		err = inChunks(rev, func(c []int64) error { return addToPlaylist(pid, c...) })
+	if !add {
+		sent, _, err := inChunks(songs, func(c []int64) error { return removeFromPlist(pid, c...) })
 		changed(pid)
 		if err != nil {
-			return "", err
+			return "", fmt.Errorf("removed %d of %d songs before: %w", sent, len(songs), err)
 		}
-		return fmt.Sprintf("added %d songs to %s (%d were there already)\n", len(songs), clean(p.Name), asked-len(songs)), nil
+		return fmt.Sprintf("removed %d songs from %s\n", sent, clean(p.Name)), nil
 	}
-	err = inChunks(songs, func(c []int64) error { return removeFromPlist(pid, c...) })
-	changed(pid)
-	if err != nil {
+	asked := len(songs)
+	if songs, err = fresh(pid, songs); err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("removed %d songs from %s\n", len(songs), clean(p.Name)), nil
+	if len(songs) == 0 {
+		return fmt.Sprintf("%s has all %d songs already\n", clean(p.Name), asked), nil
+	}
+	sent, refused, err := inChunks(reversed(songs), func(c []int64) error { return addToPlaylist(pid, c...) })
+	changed(pid)
+	if err != nil {
+		return "", fmt.Errorf("added %d of %d songs before: %w", sent, len(songs), err)
+	}
+	text := fmt.Sprintf("added %d songs to %s (%d were there already)\n", sent, clean(p.Name), asked-len(songs))
+	if refused > 0 {
+		text += fmt.Sprintf("NetEase turned away %d songs as already there\n", refused)
+	}
+	return text, nil
 }
 
 func rename(args json.RawMessage) (string, error) {

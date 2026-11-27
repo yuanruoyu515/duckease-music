@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/egoist/mygo/ui"
@@ -35,7 +36,17 @@ type spotState struct {
 	pages map[string]*spotPage
 	// busy says, by Spotify playlist, what a copy or sync of it is doing.
 	busy map[string]string
+	// links are the pairs of playlists kept in step, read off the main
+	// thread (crossplay.Links reads a file).
+	links []crossplay.Link
+	// open is the Spotify playlist whose page shows, "" for none: read by
+	// the goroutine finding its songs, which stops when it is left.
+	open atomic.Value
 }
+
+// spotSearches bounds the songs a page's opening looks for on NetEase;
+// a button looks for more.
+const spotSearches = 300
 
 // spotPage is a Spotify playlist's page: its songs, and those NetEase has.
 type spotPage struct {
@@ -45,6 +56,7 @@ type spotPage struct {
 	tracks   []spotify.Track
 	matched  []netease.Track // in the playlist's order
 	missing  []spotify.Track // those NetEase hasn't
+	pending  int             // those not looked for yet
 }
 
 // The Spotify calls the app makes; tests replace them.
@@ -65,7 +77,9 @@ func (a *app) bootSpotify() {
 	go func() {
 		id, name := spotifyAccount()
 		client := spotify.ClientID()
+		links := crossplay.Links()
 		a.post(func() {
+			a.spot.links = links
 			a.spot.user, a.spot.name, a.spot.checked = id, name, true
 			if a.spot.clientID == "" {
 				a.spot.clientID = client
@@ -156,7 +170,8 @@ func (a *app) cancelSpotifyLogin() {
 }
 
 func (a *app) disconnectSpotify() {
-	spotify.Disconnect()
+	// The keychain may ask, and a refresh under way holds the session.
+	go spotify.Disconnect()
 	a.spot.user, a.spot.name, a.spot.lists, a.spot.pages = "", "", nil, nil
 	if a.route.page == pageSpotify {
 		a.open(a.firstPage())
@@ -199,9 +214,18 @@ func (a *app) spotSettings(c *ui.Context, group func(string, func()), row func(s
 	})
 }
 
+// loadLinks reads the pairs of playlists again, as the MCP server may
+// have made one.
+func (a *app) loadLinks() {
+	go func() {
+		links := crossplay.Links()
+		a.post(func() { a.spot.links = links })
+	}()
+}
+
 // spotLinkOf returns the pair of Spotify playlist id, if it has one.
-func spotLinkOf(id string) (crossplay.Link, bool) {
-	for _, l := range crossplay.Links() {
+func (a *app) spotLinkOf(id string) (crossplay.Link, bool) {
+	for _, l := range a.spot.links {
 		if l.Spotify == id {
 			return l, true
 		}
@@ -210,8 +234,8 @@ func spotLinkOf(id string) (crossplay.Link, bool) {
 }
 
 // neteaseLinkOf returns the pair of NetEase playlist id, if it has one.
-func neteaseLinkOf(id int64) (crossplay.Link, bool) {
-	for _, l := range crossplay.Links() {
+func (a *app) neteaseLinkOf(id int64) (crossplay.Link, bool) {
+	for _, l := range a.spot.links {
 		if l.Netease == id {
 			return l, true
 		}
@@ -246,7 +270,7 @@ func (a *app) spotPlaylists(c *ui.Context, title string) {
 			}
 			ui.Icon(c, arrow).Size(12, 12).TextColor(p.faint)
 		})
-		if iconButton(c.Key("refresh"), iconRefresh, 13, p.faint, "刷新 Spotify 歌单").Size(26, 26).Radius(6).Disabled(s.loading).Clicked() {
+		if iconButton(c.Key("refresh"), iconReload, 13, p.faint, "刷新 Spotify 歌单").Size(26, 26).Radius(6).Disabled(s.loading).Clicked() {
 			a.loadSpotLists()
 		}
 	})
@@ -291,7 +315,8 @@ func (a *app) spotPlaylist(id string) *spotify.Playlist {
 }
 
 // loadSpotPage reads the songs of Spotify playlist id and finds them on
-// NetEase, the first time slowly: a search a song, spaced out.
+// NetEase: the first time slowly, a search a song, spaced out, up to
+// spotSearches of them, and only while the page shows.
 func (a *app) loadSpotPage(id string, again bool) {
 	if a.spot.pages == nil {
 		a.spot.pages = map[string]*spotPage{}
@@ -299,21 +324,47 @@ func (a *app) loadSpotPage(id string, again bool) {
 	if pg := a.spot.pages[id]; pg != nil && (pg.loading || !again && pg.err == "") {
 		return
 	}
+	if pl := a.spotPlaylist(id); pl != nil && !pl.Editable(a.spot.user) {
+		return // Spotify keeps its songs from the app
+	}
 	pg := &spotPage{loading: true, progress: "正在读取 Spotify 歌单…"}
 	a.spot.pages[id] = pg
+	a.loadLinks()
+	stop := func() bool { open, _ := a.spot.open.Load().(string); return open != id }
 	go func() {
 		tracks, err := spotifyItems(id)
 		var ids []int64
+		looked := 0
 		if err == nil {
-			ids, err = neteaseIDsOf(tracks, func(done, total int) {
-				a.post(func() { pg.progress = fmt.Sprintf("正在网易云匹配歌曲 %d/%d…", done, total) })
+			ids, err = neteaseIDsOf(tracks, crossplay.Budget{
+				MaxSearches: spotSearches,
+				Stop:        stop,
+				Progress: func(done, total int) {
+					looked = done
+					a.post(func() { pg.progress = fmt.Sprintf("正在网易云匹配歌曲 %d/%d…", done, total) })
+				},
 			})
+		}
+		if errors.Is(err, crossplay.ErrIncomplete) {
+			if stop() {
+				// Left: what was found is kept, and the page picks up there
+				// when opened again.
+				a.post(func() {
+					if a.spot.pages[id] == pg {
+						delete(a.spot.pages, id)
+					}
+				})
+				return
+			}
+			err = nil
+		} else if err == nil {
+			looked = len(tracks)
 		}
 		var matched []netease.Track
 		var missing []spotify.Track
 		if err == nil {
 			var want []int64
-			for i, n := range ids {
+			for i, n := range ids[:looked] {
 				if n == 0 {
 					missing = append(missing, tracks[i])
 				} else {
@@ -328,6 +379,7 @@ func (a *app) loadSpotPage(id string, again bool) {
 		a.post(func() {
 			pg.loading = false
 			pg.tracks, pg.matched, pg.missing = tracks, matched, missing
+			pg.pending = len(tracks) - looked
 			if err != nil {
 				pg.err = spotErrText(err)
 			}
@@ -382,7 +434,7 @@ func (a *app) spotHeader(c *ui.Context, id string, pl *spotify.Playlist, pg *spo
 			}
 			meta = append(meta, fmt.Sprintf("%d 首", len(pg.tracks)), fmt.Sprintf("网易云有 %d 首", len(pg.matched)))
 			ui.Text(c, strings.Join(meta, " · ")).FontSize(13).TextColor(p.muted)
-			link, linked := spotLinkOf(id)
+			link, linked := a.spotLinkOf(id)
 			if busy := a.spot.busy[id]; busy != "" {
 				ui.Text(c, busy).FontSize(12.5).TextColor(p.muted)
 			} else if linked {
@@ -394,6 +446,9 @@ func (a *app) spotHeader(c *ui.Context, id string, pl *spotify.Playlist, pg *spo
 			}
 			if pg.err != "" {
 				ui.Text(c, pg.err).FontSize(12.5).TextColor(p.muted)
+			}
+			if pg.pending > 0 {
+				ui.Textf(c, "还有 %d 首没有匹配，为了不触发网易云风控，每次最多匹配 %d 首", pg.pending, spotSearches).FontSize(12.5).TextColor(p.muted)
 			}
 			ui.Row(c).Gap(10).Margin(10, 0, 0, 0).Children(func() {
 				if pillButton(c.Key("play"), iconPlay, "播放", p.accent, p.onAccent).Clicked() && len(pg.matched) > 0 {
@@ -407,7 +462,7 @@ func (a *app) spotHeader(c *ui.Context, id string, pl *spotify.Playlist, pg *spo
 				}
 				busy := a.spot.busy[id] != ""
 				if linked {
-					b := pillButton(c.Key("sync"), iconRefresh, "同步", p.hover.Over(p.bg), p.text)
+					b := pillButton(c.Key("sync"), iconReload, "同步", p.hover.Over(p.bg), p.text)
 					b.Menu(func(m *ui.Menu) {
 						if m.Item("同步到网易云").Disabled(busy).Chosen() {
 							a.syncLink(link, crossplay.ToNetease)
@@ -420,14 +475,19 @@ func (a *app) spotHeader(c *ui.Context, id string, pl *spotify.Playlist, pg *spo
 						}
 						m.Separator()
 						if m.Item("取消关联").Chosen() {
-							crossplay.Unlink(id)
-							crossplay.Save()
+							go func() {
+								crossplay.Unlink(id)
+								a.loadLinks()
+							}()
 						}
 					})
 				} else if a.profile != nil && pillButton(c.Key("import"), iconPlus, "复制到网易云", p.hover.Over(p.bg), p.text).Disabled(busy).Clicked() {
 					a.importSpotify(id, name)
 				}
-				if iconButton(c.Key("reload"), iconRefresh, 14, p.muted, "重新读取").Size(36, 36).Radius(999).Clicked() {
+				if pg.pending > 0 && pillButton(c.Key("more"), iconSearch, "继续匹配", p.hover.Over(p.bg), p.text).Clicked() {
+					a.loadSpotPage(id, true)
+				}
+				if iconButton(c.Key("reload"), iconReload, 14, p.muted, "重新读取").Size(36, 36).Radius(999).Clicked() {
 					a.loadSpotPage(id, true)
 				}
 			})
@@ -493,24 +553,26 @@ func (a *app) crossWork(id string, work func(crossplay.Progress) (crossplay.Link
 			}
 			if err != nil {
 				a.toast = spotErrText(err)
+				a.loadLinks()
 				return
 			}
 			a.toast = syncReport(r)
 			a.loadSpotLists()
+			a.loadLinks()
 		})
 	}()
 }
 
 func (a *app) importSpotify(id, name string) {
 	a.crossWork(id, func(p crossplay.Progress) (crossplay.Link, crossplay.Report, error) {
-		return crossImport(id, name, p)
+		return crossImport(id, name, crossplay.Budget{}, p)
 	})
 }
 
 func (a *app) syncLink(l crossplay.Link, d crossplay.Direction) {
 	l.Direction = d
 	a.crossWork(l.Spotify, func(p crossplay.Progress) (crossplay.Link, crossplay.Report, error) {
-		r, err := crossSync(l, p)
+		r, err := crossSync(l, crossplay.Budget{}, p)
 		return l, r, err
 	})
 }
@@ -521,7 +583,7 @@ func (a *app) spotifyMenuItems(m *ui.Menu, pl *netease.Playlist) {
 	if a.spot.user == "" {
 		return
 	}
-	if l, ok := neteaseLinkOf(pl.ID); ok {
+	if l, ok := a.neteaseLinkOf(pl.ID); ok {
 		busy := a.spot.busy[l.Spotify] != ""
 		if m.Item("同步到 Spotify").Disabled(busy).Chosen() {
 			a.syncLink(l, crossplay.ToSpotify)
@@ -534,7 +596,7 @@ func (a *app) spotifyMenuItems(m *ui.Menu, pl *netease.Playlist) {
 		id, name := pl.ID, pl.Name
 		a.toast = "正在复制到 Spotify，歌多时要几分钟…"
 		a.crossWork(key, func(p crossplay.Progress) (crossplay.Link, crossplay.Report, error) {
-			return crossExport(id, name, p)
+			return crossExport(id, name, crossplay.Budget{}, p)
 		})
 	}
 }

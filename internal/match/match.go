@@ -57,7 +57,8 @@ func Score(a, b Song) float64 {
 		}
 	}
 	artist := 0.5 // unknown on either side: neither for nor against
-	if len(a.Artists) > 0 && len(b.Artists) > 0 {
+	known := len(a.Artists) > 0 && len(b.Artists) > 0
+	if known {
 		artist = 0
 		for _, x := range a.Artists {
 			for _, y := range b.Artists {
@@ -82,6 +83,12 @@ func Score(a, b Song) float64 {
 		default:
 			length = 0
 		}
+	}
+	// The same title by someone else is most often another song, or a
+	// cover: taken only with the title the same and the length too, as
+	// when the artist goes by another name or script on either side.
+	if known && artist == 0 && (title < 1 || length < 1) {
+		return 0
 	}
 	return 0.55*title + 0.3*artist + 0.15*length
 }
