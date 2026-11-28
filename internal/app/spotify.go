@@ -817,7 +817,7 @@ func (a *app) spotMissing(c *ui.Context, id string, missing []spotify.Track) {
 		for i := range missing {
 			t := missing[i]
 			label := t.Name + " — " + t.ArtistNames()
-			b := ui.ButtonBase(c.Key("miss-" + t.ID)).Height(30).PaddingX(8).Gap(10).Radius(8).AlignItems(ui.Center).Justify(ui.Start).FocusRing(false).Label(label)
+			b := ui.ButtonBase(c.Key(fmt.Sprintf("miss-%d-%s", i, t.ID))).Height(30).PaddingX(8).Gap(10).Radius(8).AlignItems(ui.Center).Justify(ui.Start).FocusRing(false).Label(label)
 			hovered := b.Hovered()
 			if hovered {
 				b.Background(p.hover)
