@@ -23,3 +23,7 @@ __pycache__/
 *.gguf
 *.onnx
 .claude/scheduled_tasks.lock
+
+# social post renders (docs/social/render.sh)
+/docs/social/logos/
+/docs/social/shots/

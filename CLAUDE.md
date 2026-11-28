@@ -15,3 +15,6 @@ Ruoyu 的个人维护分支（fork 自 LeslieYon/mygo-cloudmusic，它是 egoist
 ## Build and test (verified 2026-11-25, Go 1.27.4 from Homebrew)
 - `CGO_ENABLED=0 go test ./internal/...`
 - `scripts/build-local.sh` — local macOS build, ad-hoc signed, no notarization, no upload.
+
+## Social posts
+- Posts for 小红书 and similar follow docs/SOCIAL.md (the visual standard the owner chose on 2026-11-27). Start from docs/social/example-dual.html and render with docs/social/render.sh.

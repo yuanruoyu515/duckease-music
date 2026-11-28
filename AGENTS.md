@@ -26,3 +26,7 @@ Only write a test for behaviour that can actually break. If the code under test 
 - Look at visuals instead of asserting on them. The `NM_FRAMES` tests save PNGs into that directory and skip when it isn't set. Check pixels only for coverage, such as whether a layer still covers the window.
 - Start each test with a one-sentence comment saying the behaviour it checks, in the style of the code.
 - Run `go test ./internal/...` before committing, and run a new UI test with `-count=5`. Fix or delete a flaky test; don't retry it.
+
+## Social posts
+
+Images and copy for social posts follow `docs/SOCIAL.md`; start from `docs/social/example-dual.html` and render with `docs/social/render.sh`.

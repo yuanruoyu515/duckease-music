@@ -29,9 +29,15 @@ func TestPressScreenshots(t *testing.T) {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
 	}
+	// NM_PRESS_SCALE=2 renders at twice the pixels, for social posts.
+	scale := float32(1)
+	if os.Getenv("NM_PRESS_SCALE") == "2" {
+		scale = 2
+	}
+	px := func(v float32) int { return int(v * scale) }
 	fallbackUsage = func(time.Time) (int, int, time.Duration) { return 12, 40, 3*time.Minute + 12*time.Second }
 	defer func() { fallbackUsage = netease.FallbackUsage }()
-	for _, scene := range []string{"home", "now-playing", "stage", "queue", "playlist", "settings", "picking", "manager", "cover-picker", "sidebar", "backup", "wall", "stage-partita", "stage-tilt", "fog", "daily", "agents", "spotify", "spotify-matching", "spotify-match", "spotify-link", "spotify-connect"} {
+	for _, scene := range []string{"home", "now-playing", "stage", "queue", "playlist", "settings", "picking", "manager", "cover-picker", "sidebar", "backup", "wall", "stage-partita", "stage-tilt", "fog", "daily", "agents", "spotify", "spotify-matching", "spotify-match", "spotify-link", "spotify-connect", "heart-also"} {
 		for _, dark := range []bool{false, true} {
 			a := pressApp()
 			view, w, h := a.view, 1200, 800
@@ -101,6 +107,10 @@ func TestPressScreenshots(t *testing.T) {
 				a.spot.pages["sp-rain"] = &spotPage{tracks: make([]spotify.Track, 6), matched: a.daily[2:8], from: make([]string, 6)}
 				a.openSpotImport("sp-rain", "下雨天听的歌", true)
 				a.spot.importing.target, a.spot.importing.both = "睡前听", true
+			case "heart-also":
+				pressSpotify(a)
+				view, w, h = a.settingsView, 560, 1600
+				a.settings.HeartAlso, a.settings.HeartAlsoName = "sp:sp-road", "公路旅行"
 			case "spotify-connect":
 				view, w, h = a.settingsView, 560, 2400
 				a.spot.checked, a.spot.clientID = true, ""
@@ -111,17 +121,26 @@ func TestPressScreenshots(t *testing.T) {
 			}
 			tt := ui.NewTester(view, w, h)
 			tt.SetDark(dark)
+			tt.SetScale(scale)
 			tt.Advance(2 * time.Second)
 			tt.Frame()
 			img := tt.Image()
 			// The settings' groups the newest switches are in.
+			if scene == "heart-also" {
+				f, ok := tt.Find("点红心时同时添加到")
+				e, ok2 := tt.Find("显示评论")
+				if !ok || !ok2 {
+					t.Fatal("no heart row")
+				}
+				img = img.SubImage(image.Rect(px(28), px(f.Y-24), px(532), px(e.Y-14))).(*image.RGBA)
+			}
 			if scene == "spotify-connect" {
 				f, ok := tt.Find("连接 Spotify")
 				e, ok2 := tt.Find("要知道的几件事")
 				if !ok || !ok2 {
 					t.Fatal("no Spotify group")
 				}
-				img = img.SubImage(image.Rect(0, int(f.Y-52), w, int(e.Y+150))).(*image.RGBA)
+				img = img.SubImage(image.Rect(0, px(f.Y-52), px(float32(w)), px(e.Y+150))).(*image.RGBA)
 			}
 			if from, to := map[string]string{"settings": "播放", "backup": "备份"}[scene], map[string]string{"settings": "缓存", "backup": "更新"}[scene]; from != "" {
 				f, ok := tt.Find(from)
@@ -129,7 +148,7 @@ func TestPressScreenshots(t *testing.T) {
 				if !ok || !ok2 {
 					t.Fatalf("no %s group", from)
 				}
-				img = img.SubImage(image.Rect(0, int(f.Y-14), w, int(e.Y-10))).(*image.RGBA)
+				img = img.SubImage(image.Rect(0, px(f.Y-14), px(float32(w)), px(e.Y-10))).(*image.RGBA)
 			}
 			name := scene + "-light.png"
 			if dark {
